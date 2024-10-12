@@ -15,6 +15,7 @@ const Listing = require('./models/listing');
 const Review = require('./models/review');
 const User = require('./models/user');
 const Booking = require('./models/booking');
+const ContactMessage = require('./models/contactMessage');
 const { isLoggedIn } = require('./middleware');
 const wrapAsync = require('./utils/wrapAsync');
 const expressError = require('./utils/expressError');
@@ -290,6 +291,34 @@ app.delete('/profile/cancel/:id', isLoggedIn, wrapAsync(async (req, res) => {
     res.redirect('/profile');
 }));
 
+// Admin Contact Messages
+app.get("/admin/messages", isLoggedIn, requireAdmin, wrapAsync(async (req, res) => {
+    const messages = await ContactMessage.find({})
+        .sort('-createdAt');
+    
+    const unreadCount = await ContactMessage.countDocuments({ status: 'unread' });
+    
+    res.render("admin-messages", {
+        messages,
+        unreadCount,
+        currentUser: req.user
+    });
+}));
+
+// Mark message as read
+app.patch("/admin/messages/:id/read", isLoggedIn, requireAdmin, wrapAsync(async (req, res) => {
+    await ContactMessage.findByIdAndUpdate(req.params.id, { status: 'read' });
+    res.json({ success: true });
+}));
+
+// Delete contact message
+app.delete("/admin/messages/:id", isLoggedIn, requireAdmin, wrapAsync(async (req, res) => {
+    const { id } = req.params;
+    await ContactMessage.findByIdAndDelete(id);
+    req.flash('success', 'Message deleted successfully!');
+    res.redirect('/admin/messages');
+}));
+
 // Logout
 app.get("/logout", (req, res) => {
     req.logout(err => {
@@ -309,9 +338,55 @@ app.get("/privacy", (req, res) => {
 app.get("/terms", (req, res) => {
     res.render("terms", { currentUser: req.user || null });
 });
+// Contact page
 app.get("/contact", (req, res) => {
-    res.render("contact", { currentUser: req.user || null });
+    res.render("static/contact", { currentUser: req.user || null });
 });
+
+// Handle contact form submission
+app.post("/contact", wrapAsync(async (req, res) => {
+    // Handle both JSON and form-encoded data
+    const { name, email, subject, message } = req.body;
+    
+    try {
+        // Validate required fields
+        if (!name || !email || !subject || !message) {
+            return res.status(400).json({
+                success: false,
+                error: 'All fields are required.'
+            });
+        }
+        
+        // Basic email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Please enter a valid email address.'
+            });
+        }
+        
+        const contactMessage = new ContactMessage({
+            name: name.trim(),
+            email: email.trim(),
+            subject: subject.trim(),
+            message: message.trim()
+        });
+        
+        await contactMessage.save();
+        
+        res.json({
+            success: true,
+            message: 'Your message has been sent successfully! We will get back to you soon.'
+        });
+    } catch (error) {
+        console.error('Error saving contact message:', error);
+        res.status(500).json({
+            success: false,
+            error: 'There was an error sending your message. Please try again.'
+        });
+    }
+}));
 
 // 404
 app.all('*', (req, res, next) => next(new expressError(404, 'Page Not Found.')));
