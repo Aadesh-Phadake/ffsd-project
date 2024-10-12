@@ -52,26 +52,46 @@ async function main() {
 }
 main();
 
-// Session store
-const store = MongoStore.create({
-    mongoUrl: MONGO_URL,
-    crypto: {
-        secret: process.env.SECRET || 'defaultsecret'
-    },
-    touchAfter: 24 * 3600
-});
-store.on('error', e => console.log('Session Store Error', e));
-const sessionOptions = {
-    store: store,
-    secret: process.env.SECRET || 'defaultsecret',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        httpOnly: true,
-        expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
-        maxAge: 1000 * 60 * 60 * 24 * 7
-    }
-};
+// Session store - use memory store for development if specified
+let store;
+let sessionOptions;
+
+if (process.env.USE_MEMORY_SESSIONS === 'true') {
+    // Memory store - sessions don't persist across server restarts
+    sessionOptions = {
+        secret: process.env.SECRET || 'defaultsecret',
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+            httpOnly: true,
+            expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
+            maxAge: 1000 * 60 * 60 * 24 * 7
+        }
+    };
+    console.log('Using memory-based sessions (development mode)');
+} else {
+    // MongoDB store - sessions persist across server restarts
+    store = MongoStore.create({
+        mongoUrl: MONGO_URL,
+        crypto: {
+            secret: process.env.SECRET || 'defaultsecret'
+        },
+        touchAfter: 24 * 3600
+    });
+    store.on('error', e => console.log('Session Store Error', e));
+    sessionOptions = {
+        store: store,
+        secret: process.env.SECRET || 'defaultsecret',
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+            httpOnly: true,
+            expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
+            maxAge: 1000 * 60 * 60 * 24 * 7
+        }
+    };
+    console.log('Using MongoDB-based sessions (production mode)');
+}
 app.use(session(sessionOptions));
 app.use(flash());
 
@@ -328,6 +348,21 @@ app.get("/logout", (req, res) => {
         }
         req.flash('success', 'Successfully logged out');
         res.redirect('/login');
+    });
+});
+
+// Development route to clear all sessions (remove in production)
+app.get('/dev/clear-sessions', (req, res) => {
+    if (process.env.NODE_ENV === 'production') {
+        return res.status(403).send('Not allowed in production');
+    }
+    
+    store.clear((err) => {
+        if (err) {
+            console.error('Error clearing sessions:', err);
+            return res.status(500).send('Error clearing sessions');
+        }
+        res.send('All sessions cleared successfully! Server restart recommended.');
     });
 });
 
