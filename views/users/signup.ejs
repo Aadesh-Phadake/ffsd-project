@@ -1,0 +1,23 @@
+<% layout('./layouts/boilerplate') %>
+<div class="row mt-3">
+    <div class="col-6 offset-3">
+        <form action="/signup" method="post" class="needs-validation" novalidate>
+            <h1>Sign Up on TravelNest</h1>
+            <div class="mb-3">
+                <label for="name" class="form-label">Enter UserName</label>
+                <input type="text" name="username" class="form-control" required>
+                <div class="invalid-feedback">Please enter a valid UserName</div>
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Enter Email</label>
+                <input type="email" name="email" class="form-control"  required pattern="[a-zA-Z0-9._%+-]+@gmail\.com" >
+                <div class="invalid-feedback">Please enter a valid email</div>
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label">Enter Password</label>
+                <input type="password" name="password" class="form-control" required>
+                <div class="invalid-feedback">Please enter a valid password</div>
+            </div>
+            <button type="submit" class="btn add-btn">Sign Up</button>
+    </div>
+</div>
