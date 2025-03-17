@@ -10,6 +10,55 @@ body{
     flex: 1;
 }
 
+/* Search Form */
+.search-form {
+    background-color: white;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.search-form .form-control {
+    border: 1px solid #ddd;
+}
+
+.search-form .form-control:focus {
+    border-color: #C48857;
+    box-shadow: 0 0 0 0.2rem rgba(196, 136, 87, 0.25);
+}
+
+.search-form select.form-control {
+    cursor: pointer;
+}
+
+.search-form .btn {
+    min-width: 100px;
+}
+
+/* Carousel */
+#listingCarousel {
+    border-radius: 1rem;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+#listingCarousel .carousel-item img {
+    height: 30vh;
+    object-fit: cover;
+    width: 100%;
+}
+
+#listingCarousel .carousel-control-prev,
+#listingCarousel .carousel-control-next {
+    width: 10%;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+#listingCarousel .carousel-control-prev:hover,
+#listingCarousel .carousel-control-next:hover {
+    background: rgba(0, 0, 0, 0.4);
+}
+
 /* navbar */
 .navbar{
     height: 6.5rem;
@@ -105,4 +154,170 @@ body{
 .show-card{
     padding-left: 0;
     padding-right: 0;
+}
+
+.booking-card {
+    position: sticky;
+    top: 2rem;
+    border-radius: 12px;
+    padding: 1rem;
+    background-color: white;
+}
+
+.booking-card .card-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.booking-card .text-muted {
+    font-size: 1rem;
+    font-weight: normal;
+}
+
+.booking-card .form-control {
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}
+
+.booking-card .form-control:focus {
+    border-color: #ff385c;
+    box-shadow: 0 0 0 1px rgba(255, 56, 92, 0.2);
+}
+
+.booking-card .btn {
+    margin-top: 1rem;
+    font-size: 1rem;
+    padding: 0.75rem;
+}
+
+/* Payment Page Styles */
+.payment-container {
+    background-color: #f8f9fa;
+    padding: 2rem 0;
+    min-height: calc(100vh - 100px);
+}
+
+.payment-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
+}
+
+.payment-card:hover {
+    transform: translateY(-5px);
+}
+
+.hotel-details {
+    padding: 1.5rem;
+    border-bottom: 1px solid #eee;
+}
+
+.hotel-details h5 {
+    color: #2d3436;
+    margin-bottom: 0.5rem;
+}
+
+.booking-details {
+    padding: 1.5rem;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    margin: 1rem 0;
+}
+
+.booking-details .row {
+    margin-bottom: 0.8rem;
+}
+
+.price-breakdown {
+    padding: 1.5rem;
+    background-color: #fff;
+    border-radius: 10px;
+}
+
+.price-breakdown h5 {
+    color: #2d3436;
+    font-weight: 600;
+}
+
+.price-breakdown .row {
+    padding: 0.5rem 0;
+}
+
+.price-breakdown hr {
+    margin: 1rem 0;
+    border-color: #eee;
+}
+
+.payment-form {
+    padding: 1.5rem;
+}
+
+.payment-form h5 {
+    color: #2d3436;
+    margin-bottom: 1.5rem;
+}
+
+.payment-form .form-label {
+    font-weight: 500;
+    color: #636e72;
+}
+
+.payment-form .form-control {
+    padding: 0.8rem;
+    border: 1px solid #dfe6e9;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.payment-form .form-control:focus {
+    border-color: #C68148;
+    box-shadow: 0 0 0 0.2rem rgba(198, 129, 72, 0.25);
+}
+
+.total-amount {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #2d3436;
+}
+
+.service-fee {
+    font-size: 0.9rem;
+    color: #636e72;
+}
+
+.pay-button {
+    background-color: #C68148;
+    color: white;
+    padding: 1rem;
+    border: none;
+    border-radius: 8px;
+    font-weight: 500;
+    width: 100%;
+    margin-top: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.pay-button:hover {
+    background-color: #b57441;
+    transform: translateY(-2px);
+}
+
+.text-muted {
+    color: #636e72 !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .payment-container {
+        padding: 1rem;
+    }
+    
+    .payment-card {
+        margin: 0 1rem;
+    }
+    
+    .booking-details, .price-breakdown {
+        padding: 1rem;
+    }
 }

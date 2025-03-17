@@ -1,16 +1,43 @@
 <% layout('./layouts/boilerplate') %>
 <body>
-    <h1>All Listings</h1>
     <div class="container mt-3">
+        <h1>All Listings</h1>
+        <div class="row mb-4">
+            <div class="col-md-8 offset-md-2">
+                <form class="d-flex gap-2 search-form" action="/listings" method="GET">
+                    <input type="text" class="form-control" name="search" placeholder="Search by name or location">
+                    <select class="form-control" name="price">
+                        <option value="">Price Range</option>
+                        <option value="0-1000">Under ₹1,000</option>
+                        <option value="1000-2000">₹1,000 - ₹2,000</option>
+                        <option value="2000-3000">₹2,000 - ₹3,000</option>
+                        <option value="3000+">Above ₹3,000</option>
+                    </select>
+                    <select class="form-control" name="rating">
+                        <option value="">Rating</option>
+                        <option value="4">4+ Stars</option>
+                        <option value="3">3+ Stars</option>
+                        <option value="2">2+ Stars</option>
+                        <option value="1">1+ Stars</option>
+                    </select>
+                    <button type="submit" class="btn add-btn">Search</button>
+                </form>
+            </div>
+        </div>
         <div class="row g-4">  
             <% listings.forEach(listing => { %>
             <div class="col-lg-3 col-md-4 col-sm-6 col-12">
                 <a href="/listings/<%= listing.id %>" style="text-decoration: none; color: inherit;">
                     <div class="card listing-card h-100"> 
-                        <img src="<%= listing.image %>" class="card-img-top" alt="listing-img" style="height: 20rem; object-fit: cover;">
+                        <img src="<%= listing.images && listing.images.length > 0 ? listing.images[0] : 'https://images.unsplash.com/photo-1657002865844-c4127d542c41?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTV8fGhvdGVscyUyMGRlZmF1bHR8ZW58MHx8MHx8fDA%3D' %>" 
+                             class="card-img-top" alt="listing-img" style="height: 20rem; object-fit: cover;">
                         <div class="card-body">
                             <h5 class="card-title"><b><%= listing.title %></b></h5>
                             <h6 class="card-price">₹<%= listing.price.toLocaleString("en-IN") %></h6>
+                            <% if (listing.reviews && listing.reviews.length > 0) { %>
+                                <% const avgRating = listing.reviews.reduce((sum, review) => sum + review.rating, 0) / listing.reviews.length; %>
+                                <p class="mb-0">Rating: <%= avgRating.toFixed(1) %> ⭐</p>
+                            <% } %>
                         </div>
                         <div class="card-img-overlay"></div>
                     </div>

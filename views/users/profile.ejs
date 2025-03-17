@@ -1,0 +1,42 @@
+<% layout('./layouts/boilerplate') %>
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h3 class="card-title mb-4">My Profile</h3>
+                    <div class="user-info mb-4">
+                        <h5>User Information</h5>
+                        <p><strong>Username:</strong> <%= currentUser.username %></p>
+                        <p><strong>Email:</strong> <%= currentUser.email %></p>
+                    </div>
+
+                    <div class="bookings mt-4">
+                        <h5>My Bookings</h5>
+                        <% if (bookings && bookings.length > 0) { %>
+                            <% bookings.forEach(booking => { %>
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <h5 class="card-title"><%= booking.listing.title %></h5>
+                                        <div class="booking-details">
+                                            <p><strong>Check-in:</strong> <%= booking.checkIn %></p>
+                                            <p><strong>Check-out:</strong> <%= booking.checkOut %></p>
+                                            <p><strong>Guests:</strong> <%= booking.guests %></p>
+                                            <p><strong>Total Amount:</strong> ₹<%= booking.totalAmount.toLocaleString("en-IN") %></p>
+                                            <p><strong>Status:</strong> <span class="badge bg-success">Confirmed</span></p>
+                                        </div>
+                                        <a href="/listings/<%= booking.listing._id %>" class="btn btn-sm add-btn">View Property</a>
+                                    </div>
+                                </div>
+                            <% }) %>
+                        <% } else { %>
+                            <div class="alert alert-info">
+                                You haven't made any bookings yet. <a href="/listings">Browse properties</a> to make your first booking!
+                            </div>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

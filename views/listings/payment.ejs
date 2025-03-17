@@ -1,0 +1,91 @@
+<% layout('./layouts/boilerplate') %>
+<div class="payment-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="payment-card">
+                    <div class="hotel-details">
+                        <h3 class="mb-4">Booking Summary</h3>
+                        <h5><%= listing.title %></h5>
+                        <p class="text-muted mb-0"><i class="fas fa-map-marker-alt me-2"></i><%= listing.location %>, <%= listing.country %></p>
+                    </div>
+
+                    <div class="card-body">
+                        <!-- Booking Details -->
+                        <div class="booking-details">
+                            <h5 class="mb-3">Stay Details</h5>
+                            <div class="row">
+                                <div class="col-6">
+                                    <p class="mb-1 text-muted">Check-in</p>
+                                    <p class="mb-3 fw-bold"><%= checkIn %></p>
+                                </div>
+                                <div class="col-6">
+                                    <p class="mb-1 text-muted">Check-out</p>
+                                    <p class="mb-3 fw-bold"><%= checkOut %></p>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-6">
+                                    <p class="mb-1 text-muted">Nights</p>
+                                    <p class="mb-0 fw-bold"><%= nights %></p>
+                                </div>
+                                <div class="col-6">
+                                    <p class="mb-1 text-muted">Guests</p>
+                                    <p class="mb-0 fw-bold"><%= guests %></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Price Breakdown -->
+                        <div class="price-breakdown">
+                            <h5 class="mb-3">Price Details</h5>
+                            <div class="row">
+                                <div class="col-8">₹<%= listing.price %> × <%= nights %> nights</div>
+                                <div class="col-4 text-end">₹<%= listing.price * nights %></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-8">Service fee</div>
+                                <div class="col-4 text-end">₹<%= serviceFee %></div>
+                            </div>
+                            <hr>
+                            <div class="row total-amount">
+                                <div class="col-8">Total (INR)</div>
+                                <div class="col-4 text-end">₹<%= totalAmount %></div>
+                            </div>
+                        </div>
+
+                        <!-- Payment Form -->
+                        <form action="/listings/<%= listing._id %>/book" method="POST" class="payment-form">
+                            <input type="hidden" name="checkIn" value="<%= checkIn %>">
+                            <input type="hidden" name="checkOut" value="<%= checkOut %>">
+                            <input type="hidden" name="guests" value="<%= guests %>">
+                            
+                            <h5>Payment Details</h5>
+                            <div class="mb-3">
+                                <label class="form-label">Card Number</label>
+                                <input type="text" class="form-control" placeholder="1234 5678 9012 3456" required>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <label class="form-label">Expiry Date</label>
+                                    <input type="text" class="form-control" placeholder="MM/YY" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">CVV</label>
+                                    <input type="text" class="form-control" placeholder="123" required>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Name on Card</label>
+                                <input type="text" class="form-control" required>
+                            </div>
+                            <button type="submit" class="pay-button">
+                                Confirm and Pay ₹<%= totalAmount %>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

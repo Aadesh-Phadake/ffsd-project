@@ -1,44 +1,99 @@
 <% layout('./layouts/boilerplate') %>
 <body>
     <div class="row mt-3">
-    <div class="col-8 offset-2">
-    <h1>Create New Listing</h1>
-    <form method="post" action="/listings" novalidate class="needs-validation">
-        <div  class="mb-3">
-            <label for="title" class="form-label">Enter Title</label>
-            <input type="text" name="title" placeholder="Add a catchy title" class="form-control" required>
-            <div class="valid-feedback">Title Looks Good</div>
+        <div class="col-8 offset-2">
+            <h1>Create New Listing</h1>
+            <form method="post" action="/listings" novalidate class="needs-validation">
+                <div class="mb-3">
+                    <label for="title" class="form-label">Enter Title</label>
+                    <input type="text" name="title" placeholder="Add a catchy title" class="form-control" required>
+                    <div class="valid-feedback">Title Looks Good</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="description" class="form-label">Enter Description</label>
+                    <textarea name="description" class="form-control" required></textarea>
+                    <div class="invalid-feedback">Please enter a short description</div>
+                </div>
+
+                <div class="mb-3" id="imageUrlsContainer">
+                    <label class="form-label">Enter Image URLs (Max 20)</label>
+                    <div class="image-url-inputs">
+                        <div class="input-group mb-2">
+                            <input type="text" name="images[]" placeholder="Enter Image URL" class="form-control">
+                            <button type="button" class="btn btn-danger remove-url" style="display: none;">&times;</button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-secondary" id="addImageUrl">Add Another Image URL</button>
+                    <div class="text-muted small mt-1">You can add up to 20 image URLs</div>
+                </div>
+
+                <div class="row">
+                    <div class="mb-3 col-md-4">
+                        <label for="price" class="form-label">Enter Price</label>
+                        <input type="text" name="price" placeholder="1200" class="form-control" min=0 required>
+                        <div class="invalid-feedback">Please Enter a Valid Price</div>
+                    </div>
+                    
+                    <div class="mb-3 col-md-8">
+                        <label for="country" class="form-label">Enter Country</label>
+                        <input type="text" name="country" placeholder="India" class="form-control" required>
+                        <div class="invalid-feedback">Country name should be valid</div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="location" class="form-label">Enter Location</label>
+                    <input type="text" name="location" placeholder="Jaipur, Rajasthan" class="form-control" required>
+                    <div class="invalid-feedback">Location should be valid</div>
+                </div>
+                <button type="submit" class="btn add-btn mb-3">Create Listing</button>
+            </form>
         </div>
+    </div>
+
+    <script>
+        const imageUrlsContainer = document.querySelector('.image-url-inputs');
+        const addImageUrlBtn = document.querySelector('#addImageUrl');
         
-        <div class="mb-3">
-            <label for="description" class="form-label">Enter Description</label>
-            <textarea name="description"  class="form-control" required></textarea>
-            <div class="invalid-feedback">Please enter a short description</div>
-        </div>
-        <div class="mb-3">
-            <label for="image" class="form-label">Enter Image URL</label>
-            <input type="text" name="image" placeholder="Enter Image URL" class="form-control" >
-        </div>
-        <div class="row">
-        <div class="mb-3 col-md-4">
-            <label for="price" class="form-label">Enter Price</label>
-            <input type="text" name="price" placeholder="1200" class="form-control" min=0 required>
-            <div class="invalid-feedback">Please Enter a Valid Price</div>
-        </div>
-        
-        <div class="mb-3 col-md-8">
-            <label for="country" class="form-label">Enter Country</label>
-            <input type="text" name="country" placeholder="India" class="form-control" required>
-            <div class="invalid-feedback">Country name should be valid</div>
-        </div>
-        </div>
-        <div class="mb-3">
-            <label for="location" class="form-label">Enter Location</label>
-            <input type="text" name="location" placeholder="Jaipur, Rajasthan " class="form-control" required>
-            <div class="invalid-feedback">Location should be valid</div>
-        </div>
-        <button type="submit" class="btn add-btn mb-3">Create Listing</button>
-    </form>
-</div>
-</div>
+        function updateRemoveButtons() {
+            const removeButtons = document.querySelectorAll('.remove-url');
+            const inputs = document.querySelectorAll('input[name="images[]"]');
+            
+            removeButtons.forEach((btn, index) => {
+                if (inputs.length > 1) {
+                    btn.style.display = 'block';
+                } else {
+                    btn.style.display = 'none';
+                }
+            });
+        }
+
+        addImageUrlBtn.addEventListener('click', () => {
+            const inputCount = document.querySelectorAll('input[name="images[]"]').length;
+            
+            if (inputCount < 20) {
+                const newInputGroup = document.createElement('div');
+                newInputGroup.className = 'input-group mb-2';
+                newInputGroup.innerHTML = `
+                    <input type="text" name="images[]" placeholder="Enter Image URL" class="form-control">
+                    <button type="button" class="btn btn-danger remove-url">&times;</button>
+                `;
+                
+                imageUrlsContainer.appendChild(newInputGroup);
+                updateRemoveButtons();
+            }
+            
+            if (inputCount + 1 >= 20) {
+                addImageUrlBtn.disabled = true;
+            }
+        });
+
+        imageUrlsContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-url')) {
+                e.target.closest('.input-group').remove();
+                addImageUrlBtn.disabled = false;
+                updateRemoveButtons();
+            }
+        });
+    </script>
 </body>

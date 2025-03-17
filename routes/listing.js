@@ -20,4 +20,7 @@ router.route('/:id')
 
 router.get('/:id/edit',isLoggedIn,isOwner,wrapAsync(listingController.edit));
 
+// Add payment route
+router.get('/:id/payment', isLoggedIn, wrapAsync(listingController.renderPayment));
+
 module.exports = router;

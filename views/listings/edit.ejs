@@ -14,9 +14,25 @@
         <textarea name="description" class="form-control" required><%=listing.description%></textarea>
         <div class="invalid-feedback">Please enter a short description</div>
     </div>
-    <div class="mb-3">
-        <label for="image" class="form-label">Image URL</label>
-        <input type="text" name="image" value="<%=listing.image%>" class="form-control" >
+    <div class="mb-3" id="imageUrlsContainer">
+        <label class="form-label">Image URLs (Max 20)</label>
+        <div class="image-url-inputs">
+            <% if (listing.images && listing.images.length > 0) { %>
+                <% listing.images.forEach((image, index) => { %>
+                    <div class="input-group mb-2">
+                        <input type="text" name="images[]" value="<%= image %>" class="form-control">
+                        <button type="button" class="btn btn-danger remove-url">&times;</button>
+                    </div>
+                <% }) %>
+            <% } else { %>
+                <div class="input-group mb-2">
+                    <input type="text" name="images[]" placeholder="Enter Image URL" class="form-control">
+                    <button type="button" class="btn btn-danger remove-url" style="display: none;">&times;</button>
+                </div>
+            <% } %>
+        </div>
+        <button type="button" class="btn btn-secondary" id="addImageUrl">Add Another Image URL</button>
+        <div class="text-muted small mt-1">You can add up to 20 image URLs</div>
     </div>
     <div class="row">
     <div class="mb-3 col-md-4">
@@ -39,4 +55,51 @@
     </form><br>
     </div>
 </div>
+
+<script>
+    const imageUrlsContainer = document.querySelector('.image-url-inputs');
+    const addImageUrlBtn = document.querySelector('#addImageUrl');
+    
+    function updateRemoveButtons() {
+        const removeButtons = document.querySelectorAll('.remove-url');
+        const inputs = document.querySelectorAll('input[name="images[]"]');
+        
+        removeButtons.forEach((btn, index) => {
+            if (inputs.length > 1) {
+                btn.style.display = 'block';
+            } else {
+                btn.style.display = 'none';
+            }
+        });
+
+        // Enable/disable add button based on number of inputs
+        addImageUrlBtn.disabled = inputs.length >= 20;
+    }
+
+    // Initialize remove buttons
+    updateRemoveButtons();
+
+    addImageUrlBtn.addEventListener('click', () => {
+        const inputCount = document.querySelectorAll('input[name="images[]"]').length;
+        
+        if (inputCount < 20) {
+            const newInputGroup = document.createElement('div');
+            newInputGroup.className = 'input-group mb-2';
+            newInputGroup.innerHTML = `
+                <input type="text" name="images[]" placeholder="Enter Image URL" class="form-control">
+                <button type="button" class="btn btn-danger remove-url">&times;</button>
+            `;
+            
+            imageUrlsContainer.appendChild(newInputGroup);
+            updateRemoveButtons();
+        }
+    });
+
+    imageUrlsContainer.addEventListener('click', (e) => {
+        if (e.target.classList.contains('remove-url')) {
+            e.target.closest('.input-group').remove();
+            updateRemoveButtons();
+        }
+    });
+</script>
 </body>

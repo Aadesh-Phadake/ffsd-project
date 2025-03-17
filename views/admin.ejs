@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 5px 10px;
+            background: black;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .logout-btn:hover {
+            background: darkred;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+            text-align: center;
+        }
+        header {
+            background-color: white;
+            padding: 20px;
+            font-size: 24px;
+            margin-top: 60px;
+        }
+        .stats-overview, .update-form, .chart-section {
+            width: 60%;
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background: #c58b5e;
+            color: white;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background: #c58b5e;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            cursor: pointer;
+        }
+        canvas {
+            width: 100%;
+            height: 300px;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<%- layout('./layouts/boilerplate') %>
+<body>
+<header>
+    <h1>Admin Panel</h1>
+</header>
+
+<section class="admin-dashboard">
+    <h2>Statistics Overview</h2>
+    <table>
+        <tr>
+            <th>Metric</th>
+            <th>Value</th>
+        </tr>
+        <tr>
+            <td>Total Revenue</td>
+            <td>$<%= stats.revenue %></td>
+        </tr>
+        <tr>
+            <td>Total Bookings</td>
+            <td><%= stats.bookings %></td>
+        </tr>
+        <tr>
+            <td>Avg. Booking Value</td>
+            <td>$<%= stats.avgBookingValue %></td>
+        </tr>
+        <tr>
+            <td>Occupancy Rate</td>
+            <td><%= stats.occupancyRate %>%</td>
+        </tr>
+        <tr>
+            <td>Total Hotels</td>
+            <td><%= stats.hotels %></td>
+        </tr>
+    </table>
+    <form action="/update-stats" method="POST">
+        <label>Update Revenue:</label>
+        <input type="text" name="revenue" value="<%= stats.revenue %>" required>
+        <label>Update Bookings:</label>
+        <input type="text" name="bookings" value="<%= stats.bookings %>" required>
+        <label>Update Hotels:</label>
+        <input type="text" name="hotels" value="<%= stats.hotels %>" required>
+        <label>Update Avg. Booking Value:</label>
+        <input type="text" name="avgBookingValue" value="<%= stats.avgBookingValue %>" required>
+        <label>Update Occupancy Rate:</label>
+        <input type="text" name="occupancyRate" value="<%= stats.occupancyRate %>" required>
+        <button type="submit">Update Stats</button>
+    </form>
+    <section class="chart-section">
+        <h2>Revenue & Bookings Chart</h2>
+        <canvas id="statsChart"></canvas>
+    </section>  
+    <script>
+        const ctx = document.getElementById('statsChart').getContext('2d');
+        const statsChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Revenue', 'Bookings', 'Avg. Booking Value', 'Occupancy Rate', 'Total Hotels'],
+                datasets: [{
+                    label: 'Statistics Data',
+                    data: [
+                        parseFloat('<%= stats.revenue %>'), 
+                        parseInt('<%= stats.bookings %>'), 
+                        parseFloat('<%= stats.avgBookingValue %>'), 
+                        parseFloat('<%= stats.occupancyRate %>'), 
+                        parseInt('<%= stats.hotels %>')
+                    ],
+                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4CAF50', '#8E44AD'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

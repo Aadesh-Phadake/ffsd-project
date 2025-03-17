@@ -3,7 +3,7 @@ const router = express.Router();
 const passport = require('passport');
 const User = require('../models/user');
 const wrapAsync = require('../utils/wrapAsync');
-const {saveRedirectUrl} = require('../middleware');
+const {saveRedirectUrl, isLoggedIn} = require('../middleware');
 
 const userController = require('../controllers/user');
 
@@ -16,5 +16,9 @@ router.route('/login')
     .post(saveRedirectUrl, passport.authenticate('local', {failureFlash: true, failureRedirect: '/login'}),userController.login);
  
 router.get('/logout', userController.logout);
+
+router.get('/profile', isLoggedIn, wrapAsync(userController.renderProfile));
+
+router.post('/listings/:id/book', isLoggedIn, wrapAsync(userController.createBooking));
 
 module.exports = router;

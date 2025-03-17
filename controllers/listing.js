@@ -1,8 +1,47 @@
 const Listing = require('../models/listing');
 
 module.exports.index = async (req, res) => {
-    const listings = await Listing.find();
-    res.render('listings/index.ejs', {listings: listings});
+    let { search, price, rating } = req.query;
+    
+    // Build the filter object
+    let filter = {};
+    
+    // Combined search for title and location (case-insensitive)
+    if (search) {
+        filter.$or = [
+            { title: { $regex: search, $options: 'i' } },
+            { location: { $regex: search, $options: 'i' } }
+        ];
+    }
+    
+    // Price range filter
+    if (price) {
+        if (price === '0-1000') {
+            filter.price = { $lte: 1000 };
+        } else if (price === '1000-2000') {
+            filter.price = { $gt: 1000, $lte: 2000 };
+        } else if (price === '2000-3000') {
+            filter.price = { $gt: 2000, $lte: 3000 };
+        } else if (price === '3000+') {
+            filter.price = { $gt: 3000 };
+        }
+    }
+
+    // Get listings with populated reviews
+    let listings = await Listing.find(filter).populate('reviews');
+
+    // Filter by rating if specified
+    if (rating) {
+        listings = listings.filter(listing => {
+            if (listing.reviews && listing.reviews.length > 0) {
+                const avgRating = listing.reviews.reduce((sum, review) => sum + review.rating, 0) / listing.reviews.length;
+                return avgRating >= parseInt(rating);
+            }
+            return false;
+        });
+    }
+
+    res.render('listings/index.ejs', { listings });
 };
 
 module.exports.new = async(req, res) => {
@@ -48,4 +87,51 @@ module.exports.delete = async (req, res) => {
     console.log(deletedListing);
     res.redirect(`/listings`);
 }
+
+module.exports.renderPayment = async (req, res) => {
+    const { id } = req.params;
+    const { checkIn, checkOut, guests } = req.query;
+    
+    const listing = await Listing.findById(id);
+    if (!listing) {
+        req.flash('error', 'Listing not found');
+        return res.redirect('/listings');
+    }
+
+    // Parse the dates
+    const parseDate = (dateStr) => {
+        const parts = dateStr.split('-');
+        if (parts.length !== 3) return null;
+        const [day, month, year] = parts;
+        // Month is 0-based in JavaScript Date
+        return new Date(year, month - 1, day);
+    };
+
+    const checkInDate = parseDate(checkIn);
+    const checkOutDate = parseDate(checkOut);
+
+    let nights = 0;
+    let serviceFee = 0;
+    let totalAmount = 0;
+
+    // Calculate values if dates are valid, otherwise use 0
+    if (checkInDate && checkOutDate && !isNaN(checkInDate.getTime()) && !isNaN(checkOutDate.getTime())) {
+        nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
+        if (nights > 0) {
+            serviceFee = Math.round(listing.price * nights * 0.1);
+            totalAmount = (listing.price * nights) + serviceFee;
+        }
+    }
+
+    // Proceed with rendering even if calculations resulted in NaN
+    res.render('listings/payment', {
+        listing,
+        checkIn,
+        checkOut,
+        guests: parseInt(guests) || 1, // Default to 1 guest if parsing fails
+        nights: nights || 0, // Use 0 if calculation failed
+        serviceFee: serviceFee || 0, // Use 0 if calculation failed
+        totalAmount: totalAmount || 0 // Use 0 if calculation failed
+    });
+};
 
