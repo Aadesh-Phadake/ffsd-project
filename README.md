@@ -13,6 +13,8 @@ cd init
 
 node index.js
 
+node initOffer.js
+
 cd ..
 
 nodemon app.js
