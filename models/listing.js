@@ -42,6 +42,10 @@ const ListingSchema = new schema({
     owner: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
+    },
+    lastUpdated: {
+        type: Date,
+        default: Date.now
     }
 });
 

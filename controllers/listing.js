@@ -54,6 +54,39 @@ module.exports.show = async (req, res) => {
         req.flash('error', 'Hotel not found!');
         return res.redirect('/listings');
     }
+
+    // Check if the current user is the owner
+    if (listing.owner.equals(req.user._id)) {
+        const now = new Date();
+        const lastUpdated = new Date(listing.lastUpdated);
+        const twoMonths = 2 * 30 * 24 * 60 * 60 * 1000; // Approximation of 2 months in milliseconds
+        const fiveDays = 5 * 24 * 60 * 60 * 1000; // 5 days in milliseconds
+
+        const timeSinceLastUpdated = now - lastUpdated;
+
+        // Show flash alert if within the last 5 days of 2 months
+        if (timeSinceLastUpdated >= (twoMonths - fiveDays) && timeSinceLastUpdated < twoMonths) {
+            req.flash('warning', 'Your hotel will be deleted in less than 5 days!');
+        }
+
+        // Delete the hotel if it has been more than 2 months
+        if (timeSinceLastUpdated >= twoMonths) {
+            await Listing.findByIdAndDelete(req.params.id);
+            req.flash('error', 'Your hotel has been deleted due to inactivity.');
+            return res.redirect('/listings');
+        }
+    }else{
+        const now = new Date();
+        const lastUpdated = new Date(listing.lastUpdated);
+        const twoMonths = 2 * 30 * 24 * 60 * 60 * 1000; // Approximation of 2 months in milliseconds
+
+        const timeSinceLastUpdated = now - lastUpdated;
+        if(timeSinceLastUpdated >= twoMonths){
+            await Listing.findByIdAndDelete(req.params.id);
+            req.flash('error', 'Hotel has been deleted due to inactivity.');
+            return res.redirect('/listings');
+        }
+    }
     res.render('listings/show.ejs', {listing: listing});
 };
 
@@ -77,7 +110,8 @@ module.exports.edit = async (req, res) => {
 
 module.exports.update = async (req, res,next) => { 
     if(!req.body)throw new expressError(400,'Send valid data.');
-    await Listing.findByIdAndUpdate(req.params.id, {...req.body});
+    await Listing.findByIdAndUpdate(req.params.id, {...req.body,lastUpdated: Date.now()});
+    req.flash('success', 'Hotel updated successfully!');
     res.redirect(`/listings/${req.params.id}`);
 };
 
