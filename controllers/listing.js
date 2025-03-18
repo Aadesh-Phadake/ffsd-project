@@ -1,5 +1,8 @@
 const Listing = require('../models/listing');
-
+const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
+const dbPath = path.resolve(__dirname, '../init/offers.db');
+const db = new sqlite3.Database(dbPath);
 module.exports.index = async (req, res) => {
     let { search, price, rating } = req.query;
     
@@ -49,6 +52,7 @@ module.exports.new = async(req, res) => {
 };
 
 module.exports.show = async (req, res) => { 
+    try {
     const listing = await Listing.findById(req.params.id).populate({path: 'reviews', populate: {path: 'author'}}).populate('owner');
     if(!listing){
         req.flash('error', 'Hotel not found!');
@@ -56,7 +60,7 @@ module.exports.show = async (req, res) => {
     }
 
     // Check if the current user is the owner
-    if (listing.owner.equals(req.user._id)) {
+    if (req.user && listing.owner.equals(req.user._id)) {
         const now = new Date();
         const lastUpdated = new Date(listing.lastUpdated);
         const twoMonths = 2 * 30 * 24 * 60 * 60 * 1000; // Approximation of 2 months in milliseconds
@@ -81,13 +85,34 @@ module.exports.show = async (req, res) => {
         const twoMonths = 2 * 30 * 24 * 60 * 60 * 1000; // Approximation of 2 months in milliseconds
 
         const timeSinceLastUpdated = now - lastUpdated;
-        if(timeSinceLastUpdated >= twoMonths){
+        if (timeSinceLastUpdated >= twoMonths) {
             await Listing.findByIdAndDelete(req.params.id);
-            req.flash('error', 'Hotel has been deleted due to inactivity.');
+            req.flash('error', 'This hotel has been deleted due to inactivity.');
             return res.redirect('/listings');
         }
     }
-    res.render('listings/show.ejs', {listing: listing});
+
+    // Fetch the current offer
+    db.get("SELECT * FROM offers WHERE isActive = 1", (err, offer) => {
+        if (err) {
+            console.error(err.message);
+            return res.render('listings/show.ejs', { listing });
+        }
+
+        let discount = 0;
+        if (offer) {
+            discount = (listing.price * offer.discountPercentage) / 100;
+        }
+
+        const finalPrice = listing.price - discount;
+
+        res.render('listings/show.ejs', { listing, offer, finalPrice });
+    });
+    } catch (error) {
+        console.error(error);
+        req.flash('error', 'An error occurred while fetching the listing.');
+        res.redirect('/listings');
+    }
 };
 
 module.exports.create  =async (req, res, next) => {

@@ -30,6 +30,10 @@
                 <i>Owned by <%= listing.owner.username %></i><br>
                 <p class="card-text"><%= listing.description %><br><br>
                     <b>Price</b> ₹<%= listing.price.toLocaleString("en-IN") %><br>
+                    <% if (offer) { %>
+                        <p>Current Offer: <%= offer.description %> - <%= offer.discountPercentage %>% off</p>
+                        <p>Discounted Price: ₹<%= finalPrice.toLocaleString("en-IN") %></p>
+                    <% } %>
                     <b>Location:</b> <%= listing.location %>, <%= listing.country %>
                 </p>
 
@@ -51,7 +55,7 @@
                 <div class="col-md-3">
                     <div class="card shadow-sm booking-card">
                         <div class="card-body">
-                            <h5 class="card-title mb-4">₹<%= listing.price.toLocaleString("en-IN") %> <span class="text-muted">/night</span></h5>
+                            <h5 class="card-title mb-4">₹<%= finalPrice.toLocaleString("en-IN") %> <span class="text-muted">/night</span></h5>
                             <form action="/listings/<%= listing._id %>/payment" method="GET">
                                 <div class="mb-3">
                                     <label class="form-label">Check-in Date (DD-MM-YYYY)</label>
