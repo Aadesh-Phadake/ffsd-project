@@ -53,61 +53,65 @@ module.exports.new = async(req, res) => {
 
 module.exports.show = async (req, res) => { 
     try {
-    const listing = await Listing.findById(req.params.id).populate({path: 'reviews', populate: {path: 'author'}}).populate('owner');
-    if(!listing){
-        req.flash('error', 'Hotel not found!');
-        return res.redirect('/listings');
-    }
-
-    // Check if the current user is the owner
-    if (req.user && listing.owner.equals(req.user._id)) {
-        const now = new Date();
-        const lastUpdated = new Date(listing.lastUpdated);
-        const twoMonths = 2 * 30 * 24 * 60 * 60 * 1000; // Approximation of 2 months in milliseconds
-        const fiveDays = 5 * 24 * 60 * 60 * 1000; // 5 days in milliseconds
-
-        const timeSinceLastUpdated = now - lastUpdated;
-
-        // Show flash alert if within the last 5 days of 2 months
-        if (timeSinceLastUpdated >= (twoMonths - fiveDays) && timeSinceLastUpdated < twoMonths) {
-            req.flash('warning', 'Your hotel will be deleted in less than 5 days!');
-        }
-
-        // Delete the hotel if it has been more than 2 months
-        if (timeSinceLastUpdated >= twoMonths) {
-            await Listing.findByIdAndDelete(req.params.id);
-            req.flash('error', 'Your hotel has been deleted due to inactivity.');
+        const listing = await Listing.findById(req.params.id)
+            .populate({path: 'reviews', populate: {path: 'author'}})
+            .populate('owner')
+            .populate('bookings');
+            
+        if(!listing){
+            req.flash('error', 'Hotel not found!');
             return res.redirect('/listings');
         }
-    }else{
-        const now = new Date();
-        const lastUpdated = new Date(listing.lastUpdated);
-        const twoMonths = 2 * 30 * 24 * 60 * 60 * 1000; // Approximation of 2 months in milliseconds
 
-        const timeSinceLastUpdated = now - lastUpdated;
-        if (timeSinceLastUpdated >= twoMonths) {
-            await Listing.findByIdAndDelete(req.params.id);
-            req.flash('error', 'This hotel has been deleted due to inactivity.');
-            return res.redirect('/listings');
+        // Check if the current user is the owner
+        if (req.user && listing.owner.equals(req.user._id)) {
+            const now = new Date();
+            const lastUpdated = new Date(listing.lastUpdated);
+            const twoMonths = 2 * 30 * 24 * 60 * 60 * 1000; // Approximation of 2 months in milliseconds
+            const fiveDays = 5 * 24 * 60 * 60 * 1000; // 5 days in milliseconds
+
+            const timeSinceLastUpdated = now - lastUpdated;
+
+            // Show flash alert if within the last 5 days of 2 months
+            if (timeSinceLastUpdated >= (twoMonths - fiveDays) && timeSinceLastUpdated < twoMonths) {
+                req.flash('warning', 'Your hotel will be deleted in less than 5 days!');
+            }
+
+            // Delete the hotel if it has been more than 2 months
+            if (timeSinceLastUpdated >= twoMonths) {
+                await Listing.findByIdAndDelete(req.params.id);
+                req.flash('error', 'Your hotel has been deleted due to inactivity.');
+                return res.redirect('/listings');
+            }
+        }else{
+            const now = new Date();
+            const lastUpdated = new Date(listing.lastUpdated);
+            const twoMonths = 2 * 30 * 24 * 60 * 60 * 1000; // Approximation of 2 months in milliseconds
+
+            const timeSinceLastUpdated = now - lastUpdated;
+            if (timeSinceLastUpdated >= twoMonths) {
+                await Listing.findByIdAndDelete(req.params.id);
+                req.flash('error', 'This hotel has been deleted due to inactivity.');
+                return res.redirect('/listings');
+            }
         }
-    }
 
-    // Fetch the current offer
-    db.get("SELECT * FROM offers WHERE isActive = 1", (err, offer) => {
-        if (err) {
-            console.error(err.message);
-            return res.render('listings/show.ejs', { listing });
-        }
+        // Fetch the current offer
+        db.get("SELECT * FROM offers WHERE isActive = 1", (err, offer) => {
+            if (err) {
+                console.error(err.message);
+                return res.render('listings/show.ejs', { listing });
+            }
 
-        let discount = 0;
-        if (offer) {
-            discount = (listing.price * offer.discountPercentage) / 100;
-        }
+            let discount = 0;
+            if (offer) {
+                discount = (listing.price * offer.discountPercentage) / 100;
+            }
 
-        const finalPrice = listing.price - discount;
+            const finalPrice = listing.price - discount;
 
-        res.render('listings/show.ejs', { listing, offer, finalPrice });
-    });
+            res.render('listings/show.ejs', { listing, offer, finalPrice });
+        });
     } catch (error) {
         console.error(error);
         req.flash('error', 'An error occurred while fetching the listing.');

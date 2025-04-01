@@ -59,28 +59,13 @@
                             <input type="hidden" name="checkIn" value="<%= checkIn %>">
                             <input type="hidden" name="checkOut" value="<%= checkOut %>">
                             <input type="hidden" name="guests" value="<%= guests %>">
+                            <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
+                            <input type="hidden" name="razorpay_order_id" id="razorpay_order_id">
+                            <input type="hidden" name="razorpay_signature" id="razorpay_signature">
                             
                             <h5>Payment Details</h5>
-                            <div class="mb-3">
-                                <label class="form-label">Card Number</label>
-                                <input type="text" class="form-control" placeholder="1234 5678 9012 3456" required>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-6">
-                                    <label class="form-label">Expiry Date</label>
-                                    <input type="text" class="form-control" placeholder="MM/YY" required>
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label">CVV</label>
-                                    <input type="text" class="form-control" placeholder="123" required>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Name on Card</label>
-                                <input type="text" class="form-control" required>
-                            </div>
-                            <button type="submit" class="pay-button">
-                                Confirm and Pay ₹<%= totalAmount %>
+                            <button type="button" class="pay-button" id="pay-button">
+                                Pay ₹<%= totalAmount %> with Razorpay
                             </button>
                         </form>
                     </div>
@@ -88,4 +73,72 @@
             </div>
         </div>
     </div>
-</div> 
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+    document.getElementById('pay-button').onclick = async function(e) {
+        e.preventDefault();
+        
+        try {
+            // Create order first
+            const response = await fetch('/create-razorpay-order', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    amount: <%= totalAmount * 100 %>,
+                    currency: 'INR',
+                    listing_id: '<%= listing._id %>',
+                    checkIn: '<%= checkIn %>',
+                    checkOut: '<%= checkOut %>',
+                    guests: <%= guests %>
+                })
+            });
+
+            const order = await response.json();
+            
+            if (order.error) {
+                throw new Error(order.error);
+            }
+
+            const options = {
+                key: '<%= process.env.RAZORPAY_KEY_ID %>',
+                amount: <%= totalAmount * 100 %>,
+                currency: "INR",
+                name: "TravelNest",
+                description: "Booking Payment for <%= listing.title %>",
+                order_id: order.id,
+                handler: function (response) {
+                    document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
+                    document.getElementById('razorpay_order_id').value = response.razorpay_order_id;
+                    document.getElementById('razorpay_signature').value = response.razorpay_signature;
+                    document.querySelector('form').submit();
+                },
+                prefill: {
+                    name: "<%= currentUser.username %>",
+                    email: "<%= currentUser.email %>"
+                },
+                theme: {
+                    color: "#C68148"
+                },
+                modal: {
+                    ondismiss: function() {
+                        console.log('Payment modal closed');
+                    }
+                }
+            };
+
+            const rzp1 = new Razorpay(options);
+            rzp1.on('payment.failed', function (response) {
+                console.error('Payment failed:', response.error);
+                alert('Payment failed: ' + response.error.description);
+            });
+            rzp1.open();
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error initializing payment. Please try again.');
+        }
+    }
+</script> 
