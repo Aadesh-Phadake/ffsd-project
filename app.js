@@ -21,6 +21,7 @@ const { isLoggedIn } = require('./middleware');
 const listingRouter = require('./routes/listing');
 const reviewRouter = require('./routes/review');
 const userRouter = require('./routes/user');
+const MongoStore = require('connect-mongo');
 
 const PORT = process.env.PORT || 8080; // Default to 8080 if no environment variable is set
 
@@ -36,7 +37,7 @@ app.use(methodOverride('_method'));
 app.engine('ejs', ejsMate);
 
 // MongoDB Connection with Error Handling
-const MONGO_URL = 'mongodb://localhost:27017/ffsd-project';
+const MONGO_URL = process.env.MONGO_URL;
 
 async function main() {
     try {
@@ -48,8 +49,19 @@ async function main() {
 }
 main();
 
+const store = MongoStore.create({
+    mongoUrl: MONGO_URL,
+    crypto: {
+        secret : process.env.secret || 'defaultsecret'
+    },
+    touchAfter: 24 * 3600,
+});
+store.on('error', (e) => {
+    console.log('Session Store Error', e);
+});
 // Session Configuration
 const sessionOptions = {
+    store,
     secret: process.env.SECRET || 'defaultsecret',
     resave: false,
     saveUninitialized: true,
