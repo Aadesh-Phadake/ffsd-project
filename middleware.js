@@ -28,6 +28,22 @@ module.exports.isOwner = async (req, res, next) => {
     next();
 }
 
+module.exports.isOwnerOrAdmin = async (req, res, next) => {
+    const { id } = req.params;
+    const listing = await Listing.findById(id);
+
+    if (
+        !listing.owner.equals(req.user._id) &&
+        req.user.username !== "TravelNest"
+    ) {
+        req.flash("error", "You do not have permission to do that!");
+        return res.redirect(`/listings/${id}`);
+    }
+
+    next();
+};
+
+
 module.exports.validateListing = (req,res,next) => {
     let {error} = listingSchema.validate(req.body);
     if(error){

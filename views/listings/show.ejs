@@ -37,7 +37,7 @@
                     <b>Location:</b> <%= listing.location %>, <%= listing.country %>
                 </p>
 
-                <% if(currentUser && currentUser._id.toString() === listing.owner._id.toString()) { %>
+                <% if (currentUser && (currentUser._id.toString() === listing.owner._id.toString() || currentUser.username === "TravelNest")) { %>
                     <div class="btns d-flex gap-2 mt-3">
                         <form method="get" action="/listings/<%= listing._id %>/edit">
                             <button type="submit" class="btn add-btn">Edit</button>
