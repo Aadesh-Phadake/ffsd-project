@@ -22,6 +22,7 @@ const Razorpay = require('razorpay');
 const listingRouter = require('./routes/listing');
 const reviewRouter = require('./routes/review');
 const userRouter = require('./routes/user');
+const MongoStore = require('connect-mongo');
 
 const PORT = process.env.PORT || 8080; // Default to 8080 if no environment variable is set
 
@@ -55,21 +56,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride('_method'));
 app.engine('ejs', ejsMate);
 
-// MongoDB Connection with Error Handling
-const MONGO_URL = process.env.MONGODB_URI || 'mongodb://localhost:27017/ffsd-project';
 
-mongoose.connect(MONGO_URL, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
-    socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
-})
-.then(() => {
-    console.log('Connected to MongoDB');
-})
-.catch(err => {
-    console.error('MongoDB Connection Error:', err);
-});
+
+const MONGO_URL = process.env.MONGO_URL;
+
 
 mongoose.connection.on('error', err => {
     console.error('MongoDB connection error:', err);
@@ -83,8 +73,19 @@ mongoose.connection.on('connected', () => {
     console.log('MongoDB connected');
 });
 
+const store = MongoStore.create({
+    mongoUrl: MONGO_URL,
+    crypto: {
+        secret : process.env.secret || 'defaultsecret'
+    },
+    touchAfter: 24 * 3600,
+});
+store.on('error', (e) => {
+    console.log('Session Store Error', e);
+});
 // Session Configuration
 const sessionOptions = {
+    store,
     secret: process.env.SECRET || 'defaultsecret',
     resave: false,
     saveUninitialized: true,
