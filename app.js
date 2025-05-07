@@ -108,15 +108,6 @@ app.get('/profile', isLoggedIn, wrapAsync(async (req, res) => {
     res.render('users/profile', { bookings });
 }));
 
-// Admin stats
-let stats = {
-    revenue: "5000",
-    bookings: "120",
-    avgBookingValue: "420",
-    occupancyRate: "78",
-    hotels: "15",
-};
-
 // Admin middleware
 function requireAdmin(req, res, next) {
     if (req.user && req.user.username === "TravelNest") {
@@ -128,21 +119,53 @@ function requireAdmin(req, res, next) {
 }
 
 // Admin routes
-app.get("/admin", requireAdmin, (req, res) => {
+app.get("/admin", requireAdmin, async (req, res) => {
+    // Fetch filtered bookings
+    const bookings = await Booking.find({});
+    // Calculate total revenue
+    const totalRevenue = bookings.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
+    // Total bookings
+    const totalBookings = bookings.length;
+    // Average booking value
+    const avgBookingValue = totalBookings ? (totalRevenue / totalBookings) : 0;
+    // Total hotels
+    const totalHotels = await Listing.countDocuments();
+    // Occupancy rate (simple version)
+    const occupancyRate = totalHotels ? ((totalBookings / totalHotels) * 100).toFixed(2) : 0;
+
+    // Recent Activity: last 5 bookings
+    const recentBookings = await Booking.find({})
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .populate('user', 'username')
+        .populate('listing', 'title');
+
+    // Most Booked Hotels: aggregate top 5
+    const mostBooked = await Booking.aggregate([
+        { $group: { _id: "$listing", count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 5 }
+    ]);
+    // Populate hotel titles
+    const mostBookedHotels = await Promise.all(mostBooked.map(async (b) => {
+        const listing = await Listing.findById(b._id);
+        return listing ? { title: listing.title, count: b.count } : null;
+    }));
+
+    const stats = {
+        revenue: totalRevenue.toFixed(2),
+        bookings: totalBookings,
+        avgBookingValue: avgBookingValue.toFixed(2),
+        occupancyRate: occupancyRate,
+        hotels: totalHotels,
+    };
+
     res.render("admin", {
         stats: stats,
-        currentUser: req.user
+        currentUser: req.user,
+        recentBookings,
+        mostBookedHotels: mostBookedHotels.filter(Boolean)
     });
-});
-
-app.post("/update-stats", requireAdmin, (req, res) => {
-    stats.revenue = req.body.revenue;
-    stats.bookings = req.body.bookings;
-    stats.hotels = req.body.hotels;
-    stats.avgBookingValue = req.body.avgBookingValue;
-    stats.occupancyRate = req.body.occupancyRate;
-    req.flash('success', 'Stats updated successfully!');
-    res.redirect("/admin");
 });
 
 // 404 Route
