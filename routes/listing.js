@@ -3,7 +3,7 @@ const router = express.Router();
 const Listing = require('../models/listing');
 const wrapAsync = require('../utils/wrapAsync');
 const expressError = require('../utils/expressError');
-const { isLoggedIn , isOwner, validateListing } = require('../middleware');
+const { isLoggedIn , isOwner, validateListing ,isOwnerOrAdmin } = require('../middleware');
 
 const  listingController = require('../controllers/listing');
 
@@ -15,12 +15,12 @@ router.get('/new',isLoggedIn,wrapAsync(listingController.new));
 
 router.route('/:id')
     .get(wrapAsync(listingController.show))
-    .put(isLoggedIn,isOwner,validateListing,wrapAsync(listingController.update))
-    .delete(isLoggedIn,isOwner,wrapAsync(listingController.delete));
+    .put(isLoggedIn,isOwnerOrAdmin,validateListing,wrapAsync(listingController.update))
+    .delete(isLoggedIn,isOwnerOrAdmin,wrapAsync(listingController.delete));
 
-router.get('/:id/edit',isLoggedIn,isOwner,wrapAsync(listingController.edit));
+router.get('/:id/edit',isLoggedIn, isOwnerOrAdmin ,wrapAsync(listingController.edit));
 
 // Add payment route
-router.get('/:id/payment', isLoggedIn, wrapAsync(listingController.renderPayment));
+// router.get('/:id/payment', isLoggedIn, wrapAsync(listingController.renderPayment));
 
 module.exports = router;
