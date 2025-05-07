@@ -17,6 +17,7 @@ const LocalStrategy = require('passport-local');
 const User = require('./models/user');
 const Booking = require('./models/booking');
 const { isLoggedIn } = require('./middleware');
+const Razorpay = require('razorpay');
 
 const listingRouter = require('./routes/listing');
 const reviewRouter = require('./routes/review');
@@ -25,6 +26,25 @@ const MongoStore = require('connect-mongo');
 
 const PORT = process.env.PORT || 8080; // Default to 8080 if no environment variable is set
 
+// Initialize Razorpay
+const razorpay = new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET
+});
+
+// Verify Razorpay is properly initialized
+try {
+    razorpay.orders.all().then(() => {
+        console.log('Razorpay initialized successfully');
+    }).catch((err) => {
+        console.error('Razorpay initialization error:', err);
+    });
+} catch (error) {
+    console.error('Razorpay setup error:', error);
+}
+
+// Make razorpay instance available to all routes
+app.locals.razorpay = razorpay;
 
 // Middleware
 app.use(express.static(path.join(__dirname, 'assets')));
@@ -36,18 +56,22 @@ app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride('_method'));
 app.engine('ejs', ejsMate);
 
-// MongoDB Connection with Error Handling
+
+
 const MONGO_URL = process.env.MONGO_URL;
 
-async function main() {
-    try {
-        await mongoose.connect(MONGO_URL);
-        console.log('Connected to MongoDB');
-    } catch (err) {
-        console.error('MongoDB Connection Error:', err);
-    }
-}
-main();
+
+mongoose.connection.on('error', err => {
+    console.error('MongoDB connection error:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+    console.log('MongoDB disconnected');
+});
+
+mongoose.connection.on('connected', () => {
+    console.log('MongoDB connected');
+});
 
 const store = MongoStore.create({
     mongoUrl: MONGO_URL,
@@ -145,6 +169,29 @@ app.post("/update-stats", requireAdmin, (req, res) => {
     res.redirect("/admin");
 });
 
+// Razorpay order creation route
+app.post('/create-razorpay-order', isLoggedIn, async (req, res) => {
+    try {
+        const options = {
+            amount: req.body.amount,
+            currency: req.body.currency,
+            receipt: `booking_${Date.now()}`,
+            notes: {
+                listing_id: req.body.listing_id,
+                checkIn: req.body.checkIn,
+                checkOut: req.body.checkOut,
+                guests: req.body.guests
+            }
+        };
+
+        const order = await razorpay.orders.create(options);
+        res.json(order);
+    } catch (error) {
+        console.error('Error creating Razorpay order:', error);
+        res.status(500).json({ error: 'Could not create order' });
+    }
+});
+
 // 404 Route
 app.all('*', (req, res, next) => {
     next(new expressError(404, 'Page Not Found.'));
@@ -152,6 +199,7 @@ app.all('*', (req, res, next) => {
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {
+    console.error(err);
     let { statusCode = 500, message = 'Something went wrong' } = err;
     res.status(statusCode).render('error.ejs', { statusCode, message });
 });
