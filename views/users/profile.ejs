@@ -23,15 +23,7 @@
                                             <p><strong>Check-out:</strong> <%= booking.checkOut %></p>
                                             <p><strong>Guests:</strong> <%= booking.guests %></p>
                                             <p><strong>Total Amount:</strong> ₹<%= booking.totalAmount.toLocaleString("en-IN") %></p>
-                                            <p><strong>Status:</strong> 
-                                                <% if (booking.paymentStatus === 'completed') { %>
-                                                    <span class="badge bg-success">Confirmed</span>
-                                                <% } else if (booking.paymentStatus === 'pending') { %>
-                                                    <span class="badge bg-warning">Pending</span>
-                                                <% } else { %>
-                                                    <span class="badge bg-danger">Failed</span>
-                                                <% } %>
-                                            </p>
+                                            <p><strong>Status:</strong> <span class="badge bg-success">Confirmed</span></p>
                                         </div>
                                         <a href="/listings/<%= booking.listing._id %>" class="btn btn-sm add-btn">View Property</a>
                                     </div>
