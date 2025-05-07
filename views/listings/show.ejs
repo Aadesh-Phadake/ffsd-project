@@ -95,51 +95,37 @@
         <% } %>
 
         <% if (currentUser) { %>
-            <% 
-                const hasBooked = listing.bookings && listing.bookings.some(booking => 
-                    booking.user.equals(currentUser._id) && 
-                    new Date(booking.checkOut) < new Date()
-                );
-            %>
-            <% if (hasBooked) { %>
-                <div class="col-8 offset-2 mb-3">
-                    <hr>
-                    <h5>Leave a Review</h5>
-                    <form method="POST" action="/listings/<%= listing._id %>/reviews" novalidate class="needs-validation">
-                        <div class="mb-3 mt-2">
-                            <label for="rating" class="form-label">Rating</label>
-                            <fieldset class="starability-slot">
-                                <input type="radio" id="no-rate" class="input-no-rate" name="rating" value="1" checked aria-label="No rating." />
-                                <input type="radio" id="first-rate1" name="rating" value="1" />
-                                <label for="first-rate1" title="Terrible">1 star</label>
-                                <input type="radio" id="first-rate2" name="rating" value="2" />
-                                <label for="first-rate2" title="Not good">2 stars</label>
-                                <input type="radio" id="first-rate3" name="rating" value="3" />
-                                <label for="first-rate3" title="Average">3 stars</label>
-                                <input type="radio" id="first-rate4" name="rating" value="4" />
-                                <label for="first-rate4" title="Very good">4 stars</label>
-                                <input type="radio" id="first-rate5" name="rating" value="5" />
-                                <label for="first-rate5" title="Amazing">5 stars</label>
-                            </fieldset>
-                        </div>
-                        <div class="mb-3 mt-2">
-                            <label for="review">Comment</label>
-                            <textarea class="form-control" id="comment" name="comment" rows="3" required></textarea>
-                            <div class="invalid-feedback">
-                                Please add some comments for review.
-                            </div>
-                        </div>
-                        <button type="submit" class="btn btn-outline-dark mt-2">Submit</button>
-                    </form>
-                </div>
-            <% } else { %>
-                <div class="col-8 offset-2 mb-3">
-                    <hr>
-                    <div class="alert alert-info">
-                        You can only leave a review after staying at this property.
+            <div class="col-8 offset-2 mb-3">
+                <hr>
+                <h5>Leave a Review</h5>
+                <form method="POST" action="/listings/<%= listing._id %>/reviews" novalidate class="needs-validation">
+                    <div class="mb-3 mt-2">
+                        <label for="rating" class="form-label">Rating</label>
+                        <fieldset class="starability-slot">
+                            <input type="radio" id="no-rate" class="input-no-rate" name="rating" value="1" checked aria-label="No rating." />
+                            <input type="radio" id="first-rate1" name="rating" value="1" />
+                            <label for="first-rate1" title="Terrible">1 star</label>
+                            <input type="radio" id="first-rate2" name="rating" value="2" />
+                            <label for="first-rate2" title="Not good">2 stars</label>
+                            <input type="radio" id="first-rate3" name="rating" value="3" />
+                            <label for="first-rate3" title="Average">3 stars</label>
+                            <input type="radio" id="first-rate4" name="rating" value="4" />
+                            <label for="first-rate4" title="Very good">4 stars</label>
+                            <input type="radio" id="first-rate5" name="rating" value="5" />
+                            <label for="first-rate5" title="Amazing">5 stars</label>
+                        </fieldset>
                     </div>
-                </div>
-            <% } %>
+                    <div class="mb-3 mt-2">
+                        <label for="review">Comment</label>
+                        <textarea class="form-control" id="comment" name="comment" rows="3" required></textarea>
+                        <div class="invalid-feedback">
+                            Please add some comments for review.
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-outline-dark mt-2">Submit</button>
+                </form>
+                <hr>
+            </div>
         <% } %>
 
         <div class="col-8 offset-2 mb-3">

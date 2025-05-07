@@ -45,7 +45,6 @@ module.exports.new = async (req, res) => {
 module.exports.show = async (req, res) => {
     try {
         const listing = await Listing.findById(req.params.id)
-
             .populate({ path: 'reviews', populate: { path: 'author' } })
             .populate('owner');
 
@@ -80,7 +79,6 @@ module.exports.show = async (req, res) => {
 
         // Show page without offers/discounts
         res.render('listings/show.ejs', { listing, offer: null, finalPrice: listing.price });
-
 
     } catch (error) {
         console.error(error);

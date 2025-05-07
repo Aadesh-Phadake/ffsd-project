@@ -39,12 +39,6 @@ const ListingSchema = new schema({
             ref: 'Review'
         }
     ],
-    bookings: [
-        {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Booking'
-        }
-    ],
     owner: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
