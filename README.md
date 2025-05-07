@@ -7,15 +7,5 @@ git clone https://github.com/Aadesh-Phadake/ffsd-project.git
 
 cd ffsd-project
 
-create one user and paste its _id in init/index.js
-
-cd init
-
-node index.js
-
-node initOffer.js
-
-cd ..
-
 nodemon app.js
 
