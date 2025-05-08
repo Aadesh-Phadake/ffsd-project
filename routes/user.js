@@ -43,7 +43,8 @@ router.get('/dashboard', isLoggedIn ,async (req, res) => {
             .exec();
 
         // 4. Send the bookings to frontend
-        res.status(200).render('listings/dashboard.ejs',{bookings});
+        res.status(200).render('listings/dashboard.ejs',{bookings, currentUser: req.user});
+        
         // res.status(200).json({ bookings });
 
     } catch (err) {
