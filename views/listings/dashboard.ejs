@@ -1,0 +1,53 @@
+
+    
+<% layout('./layouts/boilerplate') %>
+<body class="bg-gradient-to-br from-orange-100 to-white min-h-screen text-gray-800">
+
+    <div class="max-w-6xl mx-auto py-12 px-4">
+        <h1 class="text-4xl font-bold text-center mb-10 text-orange-800">Your Listing Bookings</h1>
+
+        <% if (bookings.length === 0) { %>
+            <div class="bg-white rounded-xl p-6 shadow text-center text-gray-500">
+                No bookings found for your listings.
+            </div>
+        <% } else { %>
+            <div class="bg-white shadow rounded-xl overflow-hidden">
+                <div class="bg-gradient-to-r from-orange-300 to-orange-500 text-white px-6 py-4 text-lg font-semibold">
+                    Booking Overview
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm text-left">
+                        <thead class="bg-orange-100 text-orange-800 uppercase text-xs">
+                            <tr>
+                                <th class="px-6 py-3">Hotel</th>
+                                <th class="px-6 py-3">Location</th>
+                                <th class="px-6 py-3">User</th>
+                                <th class="px-6 py-3">Check-in</th>
+                                <th class="px-6 py-3">Check-out</th>
+                                <th class="px-6 py-3">Guests</th>
+                                <th class="px-6 py-3">Amount</th>
+                                <th class="px-6 py-3">Booked On</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-orange-100 bg-white">
+                            <% bookings.forEach(booking => { %>
+                                <tr class="hover:bg-orange-50">
+                                    <td class="px-6 py-4 font-medium"><%= booking.listing.title %></td>
+                                    <td class="px-6 py-4"><%= booking.listing.location %></td>
+                                    <td class="px-6 py-4"><%= booking.user.name %> <br><span class="text-xs text-gray-500"><%= booking.user.email %></span></td>
+                                    <td class="px-6 py-4"><%= booking.checkIn %></td>
+                                    <td class="px-6 py-4"><%= booking.checkOut %></td>
+                                    <td class="px-6 py-4"><%= booking.guests %></td>
+                                    <td class="px-6 py-4 text-green-600 font-semibold">₹<%= booking.totalAmount %></td>
+                                    <td class="px-6 py-4 text-gray-500 text-sm"><%= new Date(booking.createdAt).toLocaleString() %></td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        <% } %>
+    </div>
+<script src="https://cdn.tailwindcss.com"></script>
+</body>
+</html>
