@@ -1,0 +1,358 @@
+<% layout('./layouts/boilerplate') %>
+
+<div class="payment-container">
+    <div class="payment-wrapper">
+        <!-- Left Side - Booking Details -->
+        <div class="booking-details">
+            <div class="booking-header">
+                <h2>Booking Details</h2>
+                <div class="booking-status">Step 2 of 2</div>
+            </div>
+            
+            <div class="property-info">
+                <div class="property-title"><%= property.title %></div>
+                <div class="property-location">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <%= property.location %>, <%= property.country %>
+                </div>
+            </div>
+
+            <div class="booking-info">
+                <div class="info-row">
+                    <div class="info-label">Check-in</div>
+                    <div class="info-value"><%= checkIn %></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Check-out</div>
+                    <div class="info-value"><%= checkOut %></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Guests</div>
+                    <div class="info-value"><%= guests %> person(s)</div>
+                </div>
+            </div>
+
+            <div class="price-summary price-breakdown-box">
+                <div class="breakdown-title">Price Breakdown</div>
+                <div class="price-row total highlighted-total">
+                    <div class="price-label">Total Amount</div>
+                    <div class="price-value">₹<%= property.price.toLocaleString("en-IN") %></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side - Payment -->
+        <div class="payment-section">
+            <div class="payment-header">
+                <h2>Payment</h2>
+                <div class="secure-badge">
+                    <i class="fas fa-lock"></i>
+                    Secure Payment
+                </div>
+            </div>
+
+            <form id="payment-form" action="/payment/verify" method="POST">
+                <input type="hidden" id="razorpay_order_id" name="razorpay_order_id">
+                <input type="hidden" id="razorpay_payment_id" name="razorpay_payment_id">
+                <input type="hidden" id="razorpay_signature" name="razorpay_signature">
+                <input type="hidden" name="propertyId" value="<%= property._id %>">
+                <input type="hidden" name="checkIn" value="<%= checkIn %>">
+                <input type="hidden" name="checkOut" value="<%= checkOut %>">
+                <input type="hidden" name="guests" value="<%= guests %>">
+
+                <div class="payment-method">
+                    <div class="method-header">
+                        <img src="https://razorpay.com/assets/razorpay-logo-white.svg" alt="Razorpay" class="razorpay-logo">
+                        <span>Pay with Razorpay</span>
+                    </div>
+                    <div class="method-description">
+                        <div class="description-item">
+                            <i class="fas fa-credit-card"></i>
+                            <span>Credit/Debit Cards (Visa, MasterCard, RuPay)</span>
+                        </div>
+                        <div class="description-item">
+                            <i class="fas fa-university"></i>
+                            <span>Net Banking (All Major Banks)</span>
+                        </div>
+                        <div class="description-item">
+                            <i class="fas fa-wallet"></i>
+                            <span>Wallets (Paytm, Amazon Pay, Mobikwik)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" id="pay-button" class="pay-button">
+                    <span class="button-text">Pay Now</span>
+                    <span class="button-amount">₹<%= property.price.toLocaleString("en-IN") %></span>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .payment-container {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%);
+        padding: 40px 20px;
+    }
+
+    .payment-wrapper {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+
+    .booking-details, .payment-section {
+        padding: 40px;
+    }
+
+    .booking-details {
+        background: #f8f9fa;
+        border-right: 1px solid #e9ecef;
+    }
+
+    .booking-header, .payment-header {
+        margin-bottom: 30px;
+    }
+
+    .booking-header h2, .payment-header h2 {
+        font-size: 24px;
+        color: #2d3436;
+        margin-bottom: 10px;
+    }
+
+    .booking-status {
+        color: #636e72;
+        font-size: 14px;
+    }
+
+    .property-info {
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .property-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #2d3436;
+        margin-bottom: 10px;
+    }
+
+    .property-location {
+        color: #636e72;
+        font-size: 14px;
+    }
+
+    .property-location i {
+        margin-right: 5px;
+    }
+
+    .booking-info {
+        margin-bottom: 30px;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 15px;
+    }
+
+    .info-label {
+        color: #636e72;
+    }
+
+    .info-value {
+        font-weight: 500;
+        color: #2d3436;
+    }
+
+    .price-summary {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .price-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 15px;
+    }
+
+    .price-row.total {
+        border-top: 1px solid #e9ecef;
+        padding-top: 15px;
+        margin-top: 15px;
+        font-weight: 600;
+        font-size: 18px;
+    }
+
+    .secure-badge {
+        display: inline-flex;
+        align-items: center;
+        background: #e3fcef;
+        color: #00b894;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 14px;
+    }
+
+    .secure-badge i {
+        margin-right: 5px;
+    }
+
+    .payment-method {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 30px;
+    }
+
+    .method-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .razorpay-logo {
+        height: 24px;
+        margin-right: 10px;
+    }
+
+    .method-description {
+        color: #636e72;
+        font-size: 14px;
+        margin-top: 15px;
+    }
+
+    .description-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+        padding: 8px;
+        background: rgba(255, 255, 255, 0.5);
+        border-radius: 6px;
+    }
+
+    .description-item i {
+        color: #0984e3;
+        margin-right: 10px;
+        width: 20px;
+        text-align: center;
+    }
+
+    .description-item span {
+        color: #2d3436;
+        font-weight: 500;
+    }
+
+    .pay-button {
+        width: 100%;
+        background: #0984e3;
+        color: white;
+        border: none;
+        padding: 15px;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.3s ease;
+    }
+
+    .pay-button:hover {
+        background: #0873c4;
+        transform: translateY(-2px);
+    }
+
+    .button-amount {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 5px 10px;
+        border-radius: 5px;
+    }
+
+    @media (max-width: 768px) {
+        .payment-wrapper {
+            grid-template-columns: 1fr;
+        }
+
+        .booking-details {
+            border-right: none;
+            border-bottom: 1px solid #e9ecef;
+        }
+    }
+
+    .price-breakdown-box {
+        background: #e3f2fd;
+        border: 2px solid #2196f3;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(33,150,243,0.08);
+        padding: 24px 20px 18px 20px;
+        margin-bottom: 30px;
+    }
+    .breakdown-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1565c0;
+        margin-bottom: 18px;
+        letter-spacing: 0.5px;
+    }
+    .fee-note {
+        font-size: 12px;
+        color: #1976d2;
+        font-weight: 400;
+        margin-left: 2px;
+    }
+    .highlighted-total {
+        background: #bbdefb;
+        border-radius: 8px;
+        font-size: 20px;
+        font-weight: 700;
+        color: #0d47a1;
+        margin-top: 10px;
+        padding: 10px 0;
+        box-shadow: 0 1px 4px rgba(33,150,243,0.07);
+    }
+</style>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+<script>
+    const options = {
+        key: "<%= process.env.RAZORPAY_KEY_ID %>",
+        amount: "<%= property.price * 100 %>",
+        currency: "INR",
+        name: "Property Booking",
+        description: "Payment for <%= property.title %>",
+        order_id: "<%= orderId %>",
+        handler: function (response) {
+            document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
+            document.getElementById('razorpay_order_id').value = response.razorpay_order_id;
+            document.getElementById('razorpay_signature').value = response.razorpay_signature;
+            document.getElementById('payment-form').submit();
+        },
+        prefill: {
+            name: "<%= user.username %>",
+            email: "<%= user.email %>"
+        },
+        theme: {
+            color: "#0984e3"
+        }
+    };
+
+    const rzp1 = new Razorpay(options);
+    document.getElementById('pay-button').onclick = function(e) {
+        rzp1.open();
+        e.preventDefault();
+    }
+</script> 
