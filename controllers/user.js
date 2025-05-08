@@ -94,3 +94,9 @@ module.exports.createBooking = async (req, res) => {
     req.flash('success', 'Booking confirmed successfully!');
     res.redirect('/profile');
 };
+module.exports.deleteBooking = async (req, res) => {
+    const { id } = req.params;
+    await Booking.findByIdAndDelete(id);
+    req.flash('success', 'Booking deleted successfully!');
+    res.redirect('/profile');
+};
