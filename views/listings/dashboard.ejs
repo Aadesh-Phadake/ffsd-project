@@ -5,7 +5,11 @@
 
     <div class="max-w-6xl mx-auto py-12 px-4">
         <h1 class="text-4xl font-bold text-center mb-10 text-orange-800">Your Listing Bookings</h1>
-
+        <% if (currentUser) { %>
+            <p>Welcome, <%= currentUser.name || currentUser.username %>!</p>
+        <% } else { %>
+            <p>No user is logged in.</p>
+        <% } %>
         <% if (bookings.length === 0) { %>
             <div class="bg-white rounded-xl p-6 shadow text-center text-gray-500">
                 No bookings found for your listings.
@@ -27,6 +31,7 @@
                                 <th class="px-6 py-3">Guests</th>
                                 <th class="px-6 py-3">Amount</th>
                                 <th class="px-6 py-3">Booked On</th>
+                                <th class="px-6 py-3">Cancel Booking</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-orange-100 bg-white">
@@ -40,6 +45,9 @@
                                     <td class="px-6 py-4"><%= booking.guests %></td>
                                     <td class="px-6 py-4 text-green-600 font-semibold">₹<%= booking.totalAmount %></td>
                                     <td class="px-6 py-4 text-gray-500 text-sm"><%= new Date(booking.createdAt).toLocaleString() %></td>
+                                    <td class="px-6 py-4">
+                                        <a href="/profile/cancel/<%= booking._id %>" class="text-red-600 hover:text-red-800">Cancel</a>
+                                    </td>
                                 </tr>
                             <% }) %>
                         </tbody>
