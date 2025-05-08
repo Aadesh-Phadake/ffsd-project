@@ -19,6 +19,7 @@ router.get('/logout', userController.logout);
 
 router.get('/profile', isLoggedIn, wrapAsync(userController.renderProfile));
 
-router.post('/listings/:id/book', isLoggedIn, wrapAsync(userController.createBooking));
+router.get('/profile/cancel/:id', isLoggedIn, wrapAsync(userController.deleteBooking));
 
+router.post('/listings/:id/book', isLoggedIn, wrapAsync(userController.createBooking));
 module.exports = router;
