@@ -56,7 +56,7 @@
                     <div class="card shadow-sm booking-card">
                         <div class="card-body">
                             <h5 class="card-title mb-4">₹<%= finalPrice.toLocaleString("en-IN") %> <span class="text-muted">/night</span></h5>
-                            <form action="/listings/<%= listing._id %>/payment" method="GET">
+                            <form action="/payment/create/<%= listing._id %>" method="GET">
                                 <div class="mb-3">
                                     <label class="form-label">Check-in Date (DD-MM-YYYY)</label>
                                     <input type="text" class="form-control" name="checkIn" required 
