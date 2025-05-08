@@ -71,4 +71,76 @@ exports.verifyPayment = async (req, res) => {
         req.flash('error', 'Error verifying payment');
         res.redirect('/profile');
     }
-}; 
+};
+
+// Create order with 5% admin fee
+exports.createOrderWithFee = async (propertyId, checkIn, checkOut, guests) => {
+    try {
+        const property = await Listing.findById(propertyId);
+
+        if (!property) {
+            throw new Error('Property not found');
+        }
+
+        const basePrice = property.price;
+        const adminFee = basePrice * 0.05; // 5% admin fee
+        const totalPrice = basePrice + adminFee;
+
+        const options = {
+            amount: totalPrice * 100, // amount in smallest currency unit
+            currency: "INR",
+            receipt: `receipt_${Date.now()}`,
+        };
+
+        const order = await razorpay.orders.create(options);
+
+        return {
+            property,
+            orderId: order.id,
+            checkIn,
+            checkOut,
+            guests,
+            totalPrice: totalPrice.toFixed(2)
+        };
+    } catch (error) {
+        console.error('Error creating order with fee:', error);
+        throw error;
+    }
+};
+
+// Verify payment with 5% admin fee
+exports.verifyPaymentWithFee = async (paymentId, propertyId, checkIn, checkOut, guests) => {
+    try {
+        const property = await Listing.findById(propertyId);
+
+        if (!property) {
+            throw new Error('Property not found');
+        }
+
+        const basePrice = property.price;
+        const adminFee = basePrice * 0.05; // 5% admin fee
+        const totalPrice = basePrice + adminFee;
+
+        const sign = `${paymentId}|${propertyId}`;
+        const expectedSign = crypto
+            .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+            .update(sign.toString())
+            .digest("hex");
+
+        if (paymentId === expectedSign) {
+            // Payment successful
+            return {
+                success: true,
+                totalPrice: totalPrice.toFixed(2)
+            };
+        } else {
+            // Payment verification failed
+            return {
+                success: false
+            };
+        }
+    } catch (error) {
+        console.error('Error verifying payment with fee:', error);
+        throw error;
+    }
+};

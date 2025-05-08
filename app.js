@@ -170,6 +170,16 @@ app.get("/admin", requireAdmin, async (req, res) => {
     });
 });
 
+app.get("/privacy", (req, res) => {
+    res.render("privacy");
+});
+app.get("/terms", (req, res) => {
+    res.render("terms");
+});
+app.get("/contact", (req, res) => {
+    res.render("contact");
+});
+
 // 404 Route
 app.all('*', (req, res, next) => {
     next(new expressError(404, 'Page Not Found.'));

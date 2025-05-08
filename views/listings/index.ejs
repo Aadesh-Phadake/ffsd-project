@@ -33,7 +33,7 @@
                              class="card-img-top" alt="listing-img" style="height: 20rem; object-fit: cover;">
                         <div class="card-body">
                             <h5 class="card-title"><b><%= listing.title %></b></h5>
-                            <h6 class="card-price">₹<%= listing.price.toLocaleString("en-IN") %></h6>
+                            <h6 class="card-price">₹<%= listing.price.toLocaleString("en-IN") %> (including 5% admin fee)</h6>
                             <% if (listing.reviews && listing.reviews.length > 0) { %>
                                 <% const avgRating = listing.reviews.reduce((sum, review) => sum + review.rating, 0) / listing.reviews.length; %>
                                 <p class="mb-0">Rating: <%= avgRating.toFixed(1) %> ⭐</p>

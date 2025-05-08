@@ -21,6 +21,8 @@ router.get('/logout', userController.logout);
 
 router.get('/profile', isLoggedIn, wrapAsync(userController.renderProfile));
 
+router.get('/profile/cancel/:id', isLoggedIn, wrapAsync(userController.deleteBooking));
+
 router.post('/listings/:id/book', isLoggedIn, wrapAsync(userController.createBooking));
 router.get('/dashboard', isLoggedIn ,async (req, res) => {
     try {
@@ -49,6 +51,5 @@ router.get('/dashboard', isLoggedIn ,async (req, res) => {
         res.status(500).json({ message: 'Server error while fetching dashboard data' });
     }
 });
-
 
 module.exports = router;
