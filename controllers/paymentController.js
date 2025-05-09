@@ -109,29 +109,23 @@ exports.createOrderWithFee = async (propertyId, checkIn, checkOut, guests) => {
 };
 
 // Verify payment with 5% admin fee
-exports.verifyPaymentWithFee = async (paymentId, propertyId, checkIn, checkOut, guests) => {
+exports.verifyPaymentWithFee = async (razorpay_order_id, razorpay_payment_id, razorpay_signature, bookingDetails) => {
     try {
-        const property = await Listing.findById(propertyId);
-
-        if (!property) {
-            throw new Error('Property not found');
-        }
-
-        const basePrice = property.price;
-        const adminFee = basePrice * 0.05; // 5% admin fee
-        const totalPrice = basePrice + adminFee;
-
-        const sign = `${paymentId}|${propertyId}`;
+        const sign = `${razorpay_order_id}|${razorpay_payment_id}`;
         const expectedSign = crypto
             .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
             .update(sign.toString())
             .digest("hex");
 
-        if (paymentId === expectedSign) {
-            // Payment successful
+        if (razorpay_signature === expectedSign) {
+            // Payment successful, save booking to the database
+            const Booking = require('../models/booking'); // Import the Booking model
+            const newBooking = new Booking(bookingDetails);
+            await newBooking.save();
+
             return {
                 success: true,
-                totalPrice: totalPrice.toFixed(2)
+                booking: newBooking
             };
         } else {
             // Payment verification failed
