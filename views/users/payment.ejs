@@ -338,7 +338,7 @@
 <script>
     const options = {
         key: "<%= process.env.RAZORPAY_KEY_ID %>",
-        amount: "<%= property.price * 100 %>",
+        amount: "<%= (property.price * 1.05 * 100).toFixed(0) %>", // Total amount including 5% admin fee
         currency: "INR",
         name: "Property Booking",
         description: "Payment for <%= property.title %>",
@@ -359,8 +359,8 @@
     };
 
     const rzp1 = new Razorpay(options);
-    document.getElementById('pay-button').onclick = function(e) {
+    document.getElementById('pay-button').onclick = function (e) {
         rzp1.open();
         e.preventDefault();
-    }
+    };
 </script>
