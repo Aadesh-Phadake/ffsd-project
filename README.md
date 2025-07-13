@@ -1,4 +1,11 @@
 # ffsd-project
 TravelNest - Hotel Management System Website
 
-Live Link : https://travelnest-bfce.onrender.com/listings
+steps:
+
+git clone https://github.com/Aadesh-Phadake/ffsd-project.git
+
+cd ffsd-project
+
+nodemon app.js
+
