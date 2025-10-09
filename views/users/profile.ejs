@@ -17,16 +17,27 @@
                             <% bookings.forEach(booking => { %>
                                 <div class="card mb-3">
                                     <div class="card-body">
-                                        <h5 class="card-title"><%= booking.listing.title %></h5>
+                                        <h5 class="card-title">
+                                            <%= booking.listing ? booking.listing.title : 'Hotel (No longer available)' %>
+                                        </h5>
                                         <div class="booking-details">
                                             <p><strong>Check-in:</strong> <%= booking.checkIn %></p>
                                             <p><strong>Check-out:</strong> <%= booking.checkOut %></p>
                                             <p><strong>Guests:</strong> <%= booking.guests %></p>
                                             <p><strong>Total Amount:</strong> ₹<%= booking.totalAmount.toLocaleString("en-IN") %></p>
-                                            <p><strong>Status:</strong> <span class="badge bg-success">Confirmed</span></p>
+                                            <p><strong>Status:</strong> 
+                                                <span class="badge <%= booking.listing ? 'bg-success' : 'bg-warning' %>">
+                                                    <%= booking.listing ? 'Confirmed' : 'Property Unavailable' %>
+                                                </span>
+                                            </p>
                                         </div>
-                                        <a href="/listings/<%= booking.listing._id %>" class="btn btn-sm add-btn">View Property</a>
-                                        <a href="/profile/cancel/<%= booking._id %>" class="btn btn-sm btn-danger">Cancel Booking</a>
+                                        <% if (booking.listing) { %>
+                                            <a href="/listings/<%= booking.listing._id %>" class="btn btn-sm add-btn">View Property</a>
+                                        <% } %>
+                                        <form action="/profile/cancel/<%= booking._id %>" method="POST" style="display: inline;">
+                                            <input type="hidden" name="_method" value="DELETE">
+                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to cancel this booking?')">Cancel Booking</button>
+                                        </form>
                                     </div>
                                 </div>
                             <% }) %>
