@@ -20,8 +20,11 @@ router.route('/login')
 router.get('/logout', userController.logout);
 
 router.get('/profile', isLoggedIn, wrapAsync(userController.renderProfile));
+router.post('/membership/activate', isLoggedIn, wrapAsync(userController.activateMembership));
 
 router.get('/profile/cancel/:id', isLoggedIn, wrapAsync(userController.deleteBooking));
+router.get('/profile/cancel/confirm/:id', isLoggedIn, wrapAsync(userController.renderCancelConfirm));
+router.post('/profile/cancel/confirm/:id', isLoggedIn, wrapAsync(userController.confirmCancellation));
 
 router.post('/listings/:id/book', isLoggedIn, wrapAsync(userController.createBooking));
 router.get('/dashboard', isLoggedIn ,async (req, res) => {

@@ -5,14 +5,15 @@ const { isLoggedIn } = require('../middleware');
 const user = require('../models/user');
 const Listing = require('../models/listing');
 
-// Create payment order with 5% admin fee
+// Create payment order for a listing (admin fee waived for active members)
 router.get('/create/:propertyId', isLoggedIn, async (req, res, next) => {
     try {
         const propertyId = req.params.propertyId;
         const { checkIn, checkOut, guests } = req.query;
+        const isMember = req.user && req.user.isMember && req.user.membershipExpiresAt && new Date(req.user.membershipExpiresAt) > new Date();
 
-        // Call the payment controller to create the order
-        const orderDetails = await paymentController.createOrderWithFee(propertyId, checkIn, checkOut, guests);
+        // Create order with membership-aware pricing
+        const orderDetails = await paymentController.createOrderForListing(propertyId, isMember, checkIn, checkOut, guests);
 
         res.render('users/payment', {
             property: orderDetails.property,
@@ -22,6 +23,7 @@ router.get('/create/:propertyId', isLoggedIn, async (req, res, next) => {
             guests: orderDetails.guests,
             totalPrice: orderDetails.totalPrice,
             user: req.user,
+            isMember
         });
     } catch (error) {
         next(error);
@@ -48,8 +50,9 @@ router.post('/verify', isLoggedIn, async (req, res, next) => {
             return res.redirect('/profile');
         }
 
+        const isMember = req.user && req.user.isMember && req.user.membershipExpiresAt && new Date(req.user.membershipExpiresAt) > new Date();
         const basePrice = property.price;
-        const adminFee = basePrice * 0.05; // 5% admin fee
+        const adminFee = isMember ? 0 : basePrice * 0.05; // waive for members
         const totalAmount = basePrice + adminFee;
 
         const bookingDetails = {
@@ -80,6 +83,32 @@ router.post('/verify', isLoggedIn, async (req, res, next) => {
         console.error('Error verifying payment:', error);
         req.flash('error', 'Error verifying payment. Please try again.');
         res.redirect('/profile');
+    }
+});
+
+// Membership checkout
+router.get('/membership', isLoggedIn, async (req, res, next) => {
+    try {
+        const { orderId, amount } = await paymentController.createMembershipOrder();
+        res.render('users/membership', { orderId, amount, user: req.user });
+    } catch (e) {
+        next(e);
+    }
+});
+
+router.post('/membership/verify', isLoggedIn, async (req, res, next) => {
+    try {
+        const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+        const result = await paymentController.verifyMembershipPayment(req.user._id, razorpay_order_id, razorpay_payment_id, razorpay_signature);
+        if (result.success) {
+            req.flash('success', 'Membership activated!');
+            res.redirect('/profile');
+        } else {
+            req.flash('error', 'Membership payment verification failed');
+            res.redirect('/profile');
+        }
+    } catch (e) {
+        next(e);
     }
 });
 

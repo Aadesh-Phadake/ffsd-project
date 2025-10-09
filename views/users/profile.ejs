@@ -9,6 +9,17 @@
                         <h5>User Information</h5>
                         <p><strong>Username:</strong> <%= currentUser.username %></p>
                         <p><strong>Email:</strong> <%= currentUser.email %></p>
+                        <p>
+                            <strong>Membership:</strong>
+                            <% const activeMember = currentUser && currentUser.isMember && currentUser.membershipExpiresAt && new Date(currentUser.membershipExpiresAt) > new Date(); %>
+                            <% if (activeMember) { %>
+                                <span class="badge bg-success">Active until <%= new Date(currentUser.membershipExpiresAt).toLocaleDateString() %></span>
+                                <br><small class="text-muted">Free cancellations used: <%= currentUser.freeCancellationsUsed || 0 %>/2 this month</small>
+                            <% } else { %>
+                                <span class="badge bg-secondary">Inactive</span>
+                                <a href="/payment/membership" class="btn btn-sm btn-primary ms-2">Activate ₹999/month</a>
+                            <% } %>
+                        </p>
                     </div>
 
                     <div class="bookings mt-4">
@@ -17,15 +28,21 @@
                             <% bookings.forEach(booking => { %>
                                 <div class="card mb-3">
                                     <div class="card-body">
-                                        <h5 class="card-title"><%= booking.listing.title %></h5>
+                                        <% if (booking.listing) { %>
+                                            <h5 class="card-title"><%= booking.listing.title %></h5>
+                                        <% } else { %>
+                                            <h5 class="card-title text-muted">Listing unavailable</h5>
+                                        <% } %>
                                         <div class="booking-details">
                                             <p><strong>Check-in:</strong> <%= booking.checkIn %></p>
                                             <p><strong>Check-out:</strong> <%= booking.checkOut %></p>
                                             <p><strong>Guests:</strong> <%= booking.guests %></p>
-                                            <p><strong>Total Amount:</strong> ₹<%= booking.totalAmount.toLocaleString("en-IN") %></p>
+                                            <p><strong>Total Amount:</strong> ₹<%= (booking.totalAmount || 0).toLocaleString("en-IN") %></p>
                                             <p><strong>Status:</strong> <span class="badge bg-success">Confirmed</span></p>
                                         </div>
-                                        <a href="/listings/<%= booking.listing._id %>" class="btn btn-sm add-btn">View Property</a>
+                                        <% if (booking.listing) { %>
+                                            <a href="/listings/<%= booking.listing._id %>" class="btn btn-sm add-btn">View Property</a>
+                                        <% } %>
                                         <a href="/profile/cancel/<%= booking._id %>" class="btn btn-sm btn-danger">Cancel Booking</a>
                                     </div>
                                 </div>
