@@ -53,7 +53,25 @@
             <h1 class="h3 mb-1">Dashboard Overview</h1>
             <p class="text-muted mb-0">Revenue, bookings and performance metrics</p>
           </div>
-          <div>
+          <div class="d-flex align-items-center gap-3">
+            <!-- Messages Dropdown -->
+            <div class="dropdown">
+              <button class="btn btn-outline-primary position-relative" type="button" id="messagesDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-envelope"></i>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="messageCount">
+                  0
+                </span>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end" style="min-width: 350px; max-height: 400px; overflow-y: auto;">
+                <li><h6 class="dropdown-header">Recent Messages</h6></li>
+                <li><hr class="dropdown-divider"></li>
+                <div id="messagesList">
+                  <li class="dropdown-item-text text-center text-muted py-3">Loading messages...</li>
+                </div>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-center" href="/admin/messages">View All Messages</a></li>
+              </ul>
+            </div>
             <span class="badge bg-success">Online</span>
           </div>
         </div>
@@ -342,6 +360,9 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Setup chart filters
   setupChartFilters();
+  
+  // Load messages for header
+  loadMessages();
 });
 
 function setupNavigation() {
@@ -856,6 +877,57 @@ async function loadTopHotelsChart() {
     topHotelsChart.data.labels = ['Error Loading Data'];
     topHotelsChart.data.datasets[0].data = [0];
     topHotelsChart.update();
+  }
+}
+
+// Messages functionality
+function loadMessages() {
+  const messagesList = document.getElementById('messagesList');
+  const messageCount = document.getElementById('messageCount');
+  
+  // Use server-side data if available
+  <% if (typeof recentMessages !== 'undefined' && recentMessages) { %>
+    const messages = <%- JSON.stringify(recentMessages) %>;
+    renderMessages(messages);
+  <% } else { %>
+    // Fallback to AJAX if no server data
+    fetchMessages();
+  <% } %>
+}
+
+function renderMessages(messages) {
+  const messagesList = document.getElementById('messagesList');
+  const messageCount = document.getElementById('messageCount');
+  
+  if (messages && messages.length > 0) {
+    messageCount.textContent = messages.length;
+    messageCount.style.display = messages.length > 0 ? 'block' : 'none';
+    
+    messagesList.innerHTML = messages.map(msg => `
+      <li class="dropdown-item">
+        <div class="d-flex w-100 justify-content-between">
+          <h6 class="mb-1">${msg.name}</h6>
+          <small>${new Date(msg.createdAt).toLocaleDateString()}</small>
+        </div>
+        <p class="mb-1 text-truncate" style="max-width: 300px;">${msg.message}</p>
+        <small class="text-muted">${msg.email}</small>
+      </li>
+    `).join('');
+  } else {
+    messageCount.style.display = 'none';
+    messagesList.innerHTML = '<li class="dropdown-item-text text-center text-muted py-3">No messages yet</li>';
+  }
+}
+
+async function fetchMessages() {
+  try {
+    const response = await fetch('/admin/messages');
+    if (response.ok) {
+      const messages = await response.json();
+      renderMessages(messages);
+    }
+  } catch (error) {
+    console.error('Error fetching messages:', error);
   }
 }
 </script>

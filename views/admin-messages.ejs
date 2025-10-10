@@ -1,0 +1,35 @@
+<%- layout('./layouts/boilerplate') %>
+
+<div class="py-4">
+  <h3 class="mb-3">Contact Messages</h3>
+  <div class="table-responsive bg-white border rounded-3 shadow-sm">
+    <table class="table align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th scope="col">Name</th>
+          <th scope="col">Email</th>
+          <th scope="col" style="min-width: 320px;">Message</th>
+          <th scope="col">Received</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (messages && messages.length) { %>
+          <% messages.forEach(m => { %>
+            <tr>
+              <td><%= m.name %></td>
+              <td><a href="mailto:<%= m.email %>"><%= m.email %></a></td>
+              <td style="white-space: pre-wrap;"><%= m.message %></td>
+              <td><%= new Date(m.createdAt).toLocaleString() %></td>
+            </tr>
+          <% }) %>
+        <% } else { %>
+          <tr>
+            <td colspan="4" class="text-center text-muted py-4">No messages yet.</td>
+          </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+

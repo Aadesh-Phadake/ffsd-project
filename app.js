@@ -15,7 +15,10 @@ const Listing = require('./models/listing');
 const Review = require('./models/review');
 const User = require('./models/user');
 const Booking = require('./models/booking');
-const { isLoggedIn } = require('./middleware');
+const ContactMessage = require('./models/contactMessage');
+
+// Middleware and utils
+const { isLoggedIn, requireTraveller, requireAdmin } = require('./middleware');
 const wrapAsync = require('./utils/wrapAsync');
 const expressError = require('./utils/expressError');
 
@@ -113,7 +116,6 @@ app.use('/', chatRouter);
 app.get('/', (req, res) => res.redirect('/listings'));
 
 // Import role-based middleware
-const { requireTraveller, requireAdmin } = require('./middleware');
 
 // Profile (Travellers only - managers and admins don't book hotels)
 app.get('/profile', isLoggedIn, requireTraveller, wrapAsync(async (req, res) => {
@@ -135,7 +137,8 @@ function legacyAdminCheck(req, res, next) {
 
 // Admin routes - Clean Dashboard with AJAX tables
 app.get("/admin", isLoggedIn, legacyAdminCheck, wrapAsync(async (req, res) => {
-    res.render('admin-clean', { currentUser: req.user });
+    const recentMessages = await ContactMessage.find({}).sort('-createdAt').limit(5);
+    res.render('admin-clean', { currentUser: req.user, recentMessages });
 }));
 
 // Old admin route (keeping for reference)
@@ -294,14 +297,34 @@ app.get("/logout", (req, res) => {
 });
 
 // Static pages
-app.get("/privacy", (req, res) => {
-    res.render("privacy", { currentUser: req.user || null });
+app.get("/privacy", (req, res) => res.render("privacy", { currentUser: req.user || null }));
+app.get("/terms", (req, res) => res.render("terms", { currentUser: req.user || null }));
+app.get("/contact", (req, res) => res.render("contact", { currentUser: req.user || null }));
+// Contact form submit
+app.post('/contact', async (req, res) => {
+    const { name, email, message } = req.body;
+    if (!name || !email || !message) {
+        req.flash('error', 'Please fill out all fields.');
+        return res.redirect('/contact');
+    }
+    try {
+        await ContactMessage.create({
+            name,
+            email,
+            message,
+            user: req.user ? req.user._id : undefined
+        });
+        req.flash('success', 'Message sent to admin successfully.');
+    } catch (e) {
+        req.flash('error', 'Could not send your message. Please try again.');
+    }
+    res.redirect('/contact');
 });
-app.get("/terms", (req, res) => {
-    res.render("terms", { currentUser: req.user || null });
-});
-app.get("/contact", (req, res) => {
-    res.render("contact", { currentUser: req.user || null });
+
+// Admin view: contact messages
+app.get('/admin/messages', isLoggedIn, requireAdmin, async (req, res) => {
+    const messages = await ContactMessage.find({}).sort('-createdAt');
+    res.render('admin-messages', { messages, currentUser: req.user });
 });
 
 // 404

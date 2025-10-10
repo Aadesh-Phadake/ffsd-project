@@ -73,10 +73,13 @@
     <nav>
       <div class="nav nav-tabs" id="nav-tab" role="tablist">
         <button class="nav-link active" id="nav-hotels-tab" data-bs-toggle="tab" data-bs-target="#nav-hotels" type="button" role="tab">
-          <i class="fas fa-hotel me-2"></i>My Properties
+          <i class="fas fa-hotel me-2"></i>All Properties
         </button>
-        <button class="nav-link" id="nav-bookings-tab" data-bs-toggle="tab" data-bs-target="#nav-bookings" type="button" role="tab">
-          <i class="fas fa-calendar-alt me-2"></i>All Bookings
+        <button class="nav-link" id="nav-hotel-bookings-tab" data-bs-toggle="tab" data-bs-target="#nav-hotel-bookings" type="button" role="tab">
+          <i class="fas fa-calendar-alt me-2"></i>Hotel Bookings
+        </button>
+        <button class="nav-link" id="nav-taxi-bookings-tab" data-bs-toggle="tab" data-bs-target="#nav-taxi-bookings" type="button" role="tab">
+          <i class="fas fa-taxi me-2"></i>Taxi Bookings
         </button>
       </div>
     </nav>
@@ -87,11 +90,18 @@
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Your Properties</h5>
-            <div class="d-flex gap-2">
-              <input type="text" id="hotelSearch" class="form-control form-control-sm" placeholder="Search properties..." style="width: 250px;">
-              <button class="btn btn-sm btn-outline-primary" onclick="loadHotels()">
-                <i class="fas fa-sync-alt"></i> Refresh
-              </button>
+            <div class="d-flex align-items-center gap-3">
+              <div class="d-none d-lg-flex align-items-center gap-2">
+                <span class="badge bg-primary" id="hotelBookingCount">Hotel Bookings: 0</span>
+                <span class="badge bg-warning text-dark" id="taxiBookingCount">Taxi Bookings: 0</span>
+                <span class="text-muted small" id="taxiFareTotal">Taxi Fare: ₹0</span>
+              </div>
+              <div class="d-flex gap-2">
+                <input type="text" id="hotelSearch" class="form-control form-control-sm" placeholder="Search properties..." style="width: 250px;">
+                <button class="btn btn-sm btn-outline-primary" onclick="loadHotels(); loadBookingSummary();">
+                  <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+              </div>
             </div>
           </div>
           <div class="card-body">
@@ -108,15 +118,15 @@
         </div>
       </div>
       
-      <!-- Bookings Tab -->
-      <div class="tab-pane fade" id="nav-bookings" role="tabpanel">
+      <!-- Hotel Bookings Tab -->
+      <div class="tab-pane fade" id="nav-hotel-bookings" role="tabpanel">
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">All Bookings</h5>
+            <h5 class="mb-0"><i class="fas fa-hotel me-2"></i>Hotel Bookings</h5>
             <div class="d-flex gap-2">
-              <input type="text" id="bookingSearch" class="form-control form-control-sm" placeholder="Search bookings..." style="width: 250px;">
+              <input type="text" id="bookingSearch" class="form-control form-control-sm" placeholder="Search bookings..." style="width: 200px;">
               <button class="btn btn-sm btn-outline-primary" onclick="loadBookings()">
-                <i class="fas fa-sync-alt"></i> Refresh
+                <i class="fas fa-sync-alt"></i>
               </button>
             </div>
           </div>
@@ -127,7 +137,7 @@
             </div>
             <div id="bookingsContainer" style="display: none;">
               <div class="table-responsive">
-                <table class="table table-hover">
+                <table class="table table-hover table-sm">
                   <thead class="table-light">
                     <tr>
                       <th>Guest</th>
@@ -141,6 +151,47 @@
                   </thead>
                   <tbody id="bookingsList">
                     <!-- Bookings will be loaded here -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Taxi Bookings Tab -->
+      <div class="tab-pane fade" id="nav-taxi-bookings" role="tabpanel">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-taxi me-2"></i>Taxi Bookings</h5>
+            <div class="d-flex gap-2">
+              <input type="text" id="taxiBookingSearch" class="form-control form-control-sm" placeholder="Search taxi bookings..." style="width: 200px;">
+              <button class="btn btn-sm btn-outline-primary" onclick="loadTaxiBookings()">
+                <i class="fas fa-sync-alt"></i>
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div id="taxiBookingsLoading" class="text-center py-4">
+              <div class="spinner-border text-primary" role="status"></div>
+              <p class="mt-2 text-muted">Loading taxi bookings...</p>
+            </div>
+            <div id="taxiBookingsContainer" style="display: none;">
+              <div class="table-responsive">
+                <table class="table table-hover table-sm">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Guest</th>
+                      <th>Property</th>
+                      <th>Route</th>
+                      <th>Taxi Type</th>
+                      <th>Distance</th>
+                      <th>Fare</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="taxiBookingsList">
+                    <!-- Taxi bookings will be loaded here -->
                   </tbody>
                 </table>
               </div>
@@ -319,18 +370,25 @@
 <script>
 let allHotels = [];
 let allBookings = [];
+let allTaxiBookings = [];
 
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', function() {
   loadStats();
   loadHotels();
+  loadTaxiBookings();
   
   // Setup search functionality
   setupSearch();
   
-  // Load bookings when tab is clicked
-  document.getElementById('nav-bookings-tab').addEventListener('click', function() {
+  // Load bookings when tabs are clicked
+  document.getElementById('nav-hotel-bookings-tab').addEventListener('click', function() {
     loadBookings();
+    loadBookingSummary();
+  });
+  document.getElementById('nav-taxi-bookings-tab').addEventListener('click', function() {
+    loadTaxiBookings();
+    loadBookingSummary();
   });
 });
 
@@ -449,6 +507,30 @@ async function loadBookings() {
   }
 }
 
+// Load taxi bookings
+async function loadTaxiBookings() {
+  try {
+    document.getElementById('taxiBookingsLoading').style.display = 'block';
+    document.getElementById('taxiBookingsContainer').style.display = 'none';
+    
+    const response = await fetch('/manager/api/taxi-bookings');
+    const data = await response.json();
+    
+    if (data.success) {
+      allTaxiBookings = data.taxiBookings;
+      renderTaxiBookings(allTaxiBookings);
+    } else {
+      showError('Failed to load taxi bookings');
+    }
+  } catch (error) {
+    console.error('Error loading taxi bookings:', error);
+    showError('Error loading taxi bookings');
+  } finally {
+    document.getElementById('taxiBookingsLoading').style.display = 'none';
+    document.getElementById('taxiBookingsContainer').style.display = 'block';
+  }
+}
+
 // Render bookings
 function renderBookings(bookings) {
   const container = document.getElementById('bookingsList');
@@ -495,6 +577,74 @@ function renderBookings(bookings) {
   `).join('');
 }
 
+// Update header summary badges for Hotels/Taxi on Properties tab
+function loadBookingSummary() {
+  const hotelCount = allBookings.length;
+  const taxiCount = allTaxiBookings.length;
+  const taxiFare = allTaxiBookings.reduce((sum, b) => sum + (b.fareAmount || 0), 0);
+  const hotelBadge = document.getElementById('hotelBookingCount');
+  const taxiBadge = document.getElementById('taxiBookingCount');
+  const taxiFareEl = document.getElementById('taxiFareTotal');
+  if (hotelBadge) hotelBadge.textContent = `Hotel Bookings: ${hotelCount}`;
+  if (taxiBadge) taxiBadge.textContent = `Taxi Bookings: ${taxiCount}`;
+  if (taxiFareEl) taxiFareEl.textContent = `Taxi Fare: ₹${taxiFare.toLocaleString('en-IN')}`;
+}
+
+// Render taxi bookings
+function renderTaxiBookings(taxiBookings) {
+  const container = document.getElementById('taxiBookingsList');
+  
+  if (taxiBookings.length === 0) {
+    container.innerHTML = `
+      <tr>
+        <td colspan="7" class="text-center py-5">
+          <i class="fas fa-taxi fa-3x text-muted mb-3"></i>
+          <h5>No taxi bookings found</h5>
+          <p class="text-muted">Taxi bookings will appear here once guests book rides from your properties.</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
+  container.innerHTML = taxiBookings.map(booking => `
+    <tr>
+      <td>
+        <div>
+          <strong>${booking.user.username}</strong><br>
+          <small class="text-muted">${booking.user.email}</small>
+        </div>
+      </td>
+      <td>
+        <div class="d-flex align-items-center">
+          <img src="${booking.listing.images[0]}" alt="${booking.listing.title}" 
+               style="width: 40px; height: 40px; object-fit: cover; border-radius: 5px; margin-right: 10px;">
+          <div>
+            <strong>${booking.listing.title}</strong><br>
+            <small class="text-muted">${booking.listing.location}</small>
+          </div>
+        </div>
+      </td>
+      <td>
+        <div>
+          <strong>${booking.pickupLocation}</strong><br>
+          <small class="text-muted">→ ${booking.dropLocation}</small>
+        </div>
+      </td>
+      <td>
+        <span class="badge bg-info">${booking.taxiType}</span>
+      </td>
+      <td>${booking.distanceKm} km</td>
+      <td><strong>₹${booking.fareAmount.toLocaleString('en-IN')}</strong></td>
+      <td>
+        <span class="badge ${booking.paymentStatus === 'Paid' ? 'bg-success' : booking.paymentStatus === 'Pending' ? 'bg-warning' : 'bg-danger'}">
+          ${booking.paymentStatus}
+        </span>
+      </td>
+    </tr>
+  `).join('');
+}
+
 // Setup search functionality
 function setupSearch() {
   document.getElementById('hotelSearch').addEventListener('input', function(e) {
@@ -514,6 +664,18 @@ function setupSearch() {
       booking.listing.title.toLowerCase().includes(searchTerm)
     );
     renderBookings(filtered);
+  });
+  
+  document.getElementById('taxiBookingSearch').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const filtered = allTaxiBookings.filter(booking => 
+      booking.user.username.toLowerCase().includes(searchTerm) ||
+      booking.user.email.toLowerCase().includes(searchTerm) ||
+      booking.listing.title.toLowerCase().includes(searchTerm) ||
+      booking.pickupLocation.toLowerCase().includes(searchTerm) ||
+      booking.dropLocation.toLowerCase().includes(searchTerm)
+    );
+    renderTaxiBookings(filtered);
   });
 }
 

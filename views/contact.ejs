@@ -1,24 +1,38 @@
 <%- layout('./layouts/boilerplate') %>
 
-<div style="padding: 30px; font-family: Arial, sans-serif;">
-  <h1 style="color: #2c3e50;">Contact Us - TravelNest</h1>
-  
-  <p style="line-height: 1.6;">For any inquiries, reach out to us:</p>
-  <ul style="line-height: 1.8;">
-    <li><strong>Phone:</strong> +91-9876543210</li>
-    <li><strong>Email:</strong> support@travelnest.com</li>
-  </ul>
+<div class="py-5">
+  <h2 class="text-center fw-bold mb-4" style="color:#1570ef">Contact Me</h2>
 
-  <h2 style="margin-top: 30px; color: #34495e;">Frequently Asked Questions</h2>
+  <div class="row g-4 align-items-start justify-content-center">
+    <div class="col-12 col-lg-6">
+      <form action="/contact" method="POST" class="p-3 p-sm-4 bg-white rounded-3 border shadow-sm">
+        <div class="mb-3">
+          <label for="name" class="form-label">Name</label>
+          <input type="text" id="name" name="name" class="form-control" placeholder="Your Name" required>
+        </div>
+        <div class="mb-3">
+          <label for="email" class="form-label">Email</label>
+          <input type="email" id="email" name="email" class="form-control" placeholder="you@example.com" required>
+        </div>
+        <div class="mb-4">
+          <label for="message" class="form-label">Message</label>
+          <textarea id="message" name="message" rows="5" class="form-control" placeholder="Type your message here..." required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary w-100" style="background:#1570ef;border-color:#1570ef">Send Message</button>
+      </form>
+    </div>
 
-  <div style="margin-top: 20px;">
-    <h3 style="color: #2c3e50;">1. Can I cancel my reservation?</h3>
-    <p>Yes, cancellation is possible depending on the hotel's policy. Please refer to the cancellation terms on your booking page.</p>
-
-    <h3 style="color: #2c3e50;">2. How do I get a refund?</h3>
-    <p>Refunds are processed within 7 working days to the original payment method after cancellation is confirmed.</p>
-
-    <h3 style="color: #2c3e50;">3. What if I made a mistake while booking?</h3>
-    <p>If you’ve made a mistake in your booking, please contact our support team immediately. We'll try our best to help you.</p>
+    <div class="col-12 col-lg-4">
+      <div class="ps-lg-3 text-center text-lg-start">
+        <p class="mb-2 fw-semibold">Connect with me</p>
+        <div class="d-flex gap-3 justify-content-center justify-content-lg-start fs-3" style="color:#1570ef">
+          <a class="text-decoration-none" style="color:#1570ef" href="#" aria-label="GitHub"><i class="fab fa-github"></i></a>
+          <a class="text-decoration-none" style="color:#1570ef" href="#" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a>
+          <a class="text-decoration-none" style="color:#1570ef" href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+          <a class="text-decoration-none" style="color:#1570ef" href="#" aria-label="X"><i class="fab fa-x-twitter"></i></a>
+          <a class="text-decoration-none" style="color:#1570ef" href="mailto:support@travelnest.com" aria-label="Email"><i class="fas fa-envelope"></i></a>
+        </div>
+      </div>
+    </div>
   </div>
 </div>

@@ -62,6 +62,25 @@ router.get('/api/bookings', isLoggedIn, requireManager, wrapAsync(async (req, re
     }
 }));
 
+// API to get taxi bookings for manager's hotels
+router.get('/api/taxi-bookings', isLoggedIn, requireManager, wrapAsync(async (req, res) => {
+    try {
+        const managerHotels = await Listing.find({ owner: req.user._id }, '_id');
+        const hotelIds = managerHotels.map(hotel => hotel._id);
+        
+        const TaxiBooking = require('../models/taxiBooking');
+        const taxiBookings = await TaxiBooking.find({ listing: { $in: hotelIds } })
+            .populate('user', 'username email')
+            .populate('listing', 'title location images')
+            .sort('-createdAt');
+        
+        res.json({ success: true, taxiBookings });
+    } catch (error) {
+        console.error('Error fetching manager taxi bookings:', error);
+        res.status(500).json({ error: 'Failed to fetch taxi bookings' });
+    }
+}));
+
 // API to get dashboard stats
 router.get('/api/stats', isLoggedIn, requireManager, wrapAsync(async (req, res) => {
     try {
