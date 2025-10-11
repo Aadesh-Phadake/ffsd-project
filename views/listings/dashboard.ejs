@@ -1,55 +1,407 @@
 <% layout('./layouts/boilerplate') %>
 
-<div class="container mt-5">
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card shadow-sm">
-                <div class="card-header">
-                    <h3 class="card-title mb-0">Hotel Manager Dashboard</h3>
-                </div>
-                <div class="card-body">
-                    <% if (currentUser) { %>
-                        <p class="mb-4">Welcome, <%= currentUser.username %>!</p>
-                    <% } %>
+    <div class="max-w-6xl mx-auto py-12 px-4">
+        <div class="mb-6">
+            <a href="/listings" class="inline-flex items-center text-orange-600 hover:text-orange-800 transition-colors duration-200">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Back to Listings
+            </a>
+        </div>
+        <h1 class="text-4xl font-bold text-center mb-10 text-orange-800">Hotel Owner Dashboard</h1>
+        <% if (currentUser) { %>
+            <p>Welcome, <%= currentUser.name || currentUser.username %>!</p>
+        <% } else { %>
+            <p>No user is logged in.</p>
+        <% } %>
 
-                    <% if (bookings && bookings.length > 0) { %>
-                        <h5 class="mb-3">Recent Bookings</h5>
-                        <div class="table-responsive">
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>Hotel</th>
-                                        <th>Guest</th>
-                                        <th>Check-in</th>
-                                        <th>Check-out</th>
-                                        <th>Guests</th>
-                                        <th>Amount</th>
-                                        <th>Booked On</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <% bookings.forEach(booking => { %>
-                                        <tr>
-                                            <td><%= booking.listing ? booking.listing.title : 'N/A' %></td>
-                                            <td><%= booking.user ? booking.user.username : 'N/A' %></td>
-                                            <td><%= booking.checkIn %></td>
-                                            <td><%= booking.checkOut %></td>
-                                            <td><%= booking.guests %></td>
-                                            <td>₹<%= booking.totalAmount || 0 %></td>
-                                            <td><%= new Date(booking.createdAt).toLocaleDateString() %></td>
-                                        </tr>
-                                    <% }) %>
-                                </tbody>
-                            </table>
-                        </div>
-                    <% } else { %>
-                        <div class="alert alert-info">
-                            <h5>No bookings found</h5>
-                            <p>You don't have any bookings for your listings yet.</p>
-                        </div>
-                    <% } %>
+        <!-- Navigation Tabs -->
+        <div class="mb-6">
+            <div class="border-b border-gray-200">
+                <nav class="-mb-px flex space-x-8">
+                    <button id="bookings-tab" class="tab-button active py-2 px-1 border-b-2 border-orange-500 font-medium text-sm text-orange-600">
+                        My Bookings
+                    </button>
+                    <button id="hotels-tab" class="tab-button py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                        My Hotels
+                    </button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Bookings Section -->
+        <div id="bookings-section">
+            <!-- Search Form -->
+            <div class="mb-4">
+                <form id="dashboard-search-form" class="flex gap-2 items-center">
+                    <div class="relative flex-1 max-w-md">
+                        <input type="text" id="search-input" name="search" 
+                               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                               placeholder="Search bookings...">
+                    </div>
+                    <button type="button" id="search-btn" 
+                            class="px-3 py-2 text-sm bg-orange-600 text-white rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors duration-200">
+                        <span id="search-text">Search</span>
+                        <span id="search-spinner" class="hidden">
+                            <svg class="animate-spin h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </span>
+                    </button>
+                    <button type="button" id="clear-btn" 
+                            class="px-3 py-2 text-sm bg-gray-500 text-white rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors duration-200">
+                        Clear
+                    </button>
+                </form>
+                <div id="search-results-info" class="mt-1 text-xs text-gray-600 hidden"></div>
+            </div>
+            <div id="bookings-container">
+            <% if (bookings.length === 0) { %>
+                <div class="bg-white rounded-xl p-6 shadow text-center text-gray-500">
+                    No bookings found for your listings.
+                </div>
+            <% } else { %>
+            <div class="bg-white shadow rounded-xl overflow-hidden">
+                <div class="bg-gradient-to-r from-orange-300 to-orange-500 text-white px-6 py-4 text-lg font-semibold">
+                    Booking Overview
+                </div>
+                <div class="overflow-x-auto">
+                    <table id="bookings-table" class="min-w-full text-sm text-left">
+                        <thead class="bg-orange-100 text-orange-800 uppercase text-xs">
+                            <tr>
+                                <th class="px-6 py-3">Hotel</th>
+                                <th class="px-6 py-3">Location</th>
+                                <th class="px-6 py-3">User</th>
+                                <th class="px-6 py-3">Check-in</th>
+                                <th class="px-6 py-3">Check-out</th>
+                                <th class="px-6 py-3">Guests</th>
+                                <th class="px-6 py-3">Amount</th>
+                                <th class="px-6 py-3">Booked On</th>
+                                <th class="px-6 py-3">Cancel Booking</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bookings-tbody" class="divide-y divide-orange-100 bg-white">
+                            <% bookings.forEach(booking => { %>
+                                <tr class="hover:bg-orange-50">
+                                    <td class="px-6 py-4 font-medium"><%= booking.listing.title %></td>
+                                    <td class="px-6 py-4"><%= booking.listing.location %></td>
+                                    <td class="px-6 py-4"><%= booking.user.name %> <br><span class="text-xs text-gray-500"><%= booking.user.email %></span></td>
+                                    <td class="px-6 py-4"><%= booking.checkIn %></td>
+                                    <td class="px-6 py-4"><%= booking.checkOut %></td>
+                                    <td class="px-6 py-4"><%= booking.guests %></td>
+                                    <td class="px-6 py-4 text-green-600 font-semibold">₹<%= booking.totalAmount %></td>
+                                    <td class="px-6 py-4 text-gray-500 text-sm"><%= new Date(booking.createdAt).toLocaleString() %></td>
+                                    <td class="px-6 py-4">
+                                        <a href="/profile/cancel/<%= booking._id %>" class="text-red-600 hover:text-red-800">Cancel</a>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <% } %>
+            </div>
+        </div>
+
+        <!-- Hotels Section -->
+        <div id="hotels-section" class="hidden">
+            <div class="mb-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-gray-800">My Hotels</h3>
+                    <a href="/listings/new" class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors duration-200 text-sm">
+                        Add New Hotel
+                    </a>
+                </div>
+            </div>
+            <div id="hotels-container">
+                <div class="text-center py-8">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto"></div>
+                    <p class="mt-2 text-gray-600">Loading your hotels...</p>
                 </div>
             </div>
         </div>
     </div>
-</div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Dashboard loaded, initializing...');
+            
+            // Tab elements
+            const bookingsTab = document.getElementById('bookings-tab');
+            const hotelsTab = document.getElementById('hotels-tab');
+            const bookingsSection = document.getElementById('bookings-section');
+            const hotelsSection = document.getElementById('hotels-section');
+            
+            // Search elements
+            const searchForm = document.getElementById('dashboard-search-form');
+            const searchInput = document.getElementById('search-input');
+            const searchBtn = document.getElementById('search-btn');
+            const searchText = document.getElementById('search-text');
+            const searchSpinner = document.getElementById('search-spinner');
+            const clearBtn = document.getElementById('clear-btn');
+            const searchResultsInfo = document.getElementById('search-results-info');
+            const bookingsContainer = document.getElementById('bookings-container');
+            const hotelsContainer = document.getElementById('hotels-container');
+
+            let searchTimeout = null;
+            let originalBookings = null;
+
+            // Store original bookings on page load
+            if (bookingsContainer.innerHTML.trim()) {
+                originalBookings = bookingsContainer.innerHTML;
+            }
+
+            // Tab switching functionality
+            function switchTab(activeTab, activeSection, inactiveTab, inactiveSection) {
+                // Update tab styles
+                activeTab.classList.add('active', 'border-orange-500', 'text-orange-600');
+                activeTab.classList.remove('border-transparent', 'text-gray-500');
+                
+                inactiveTab.classList.remove('active', 'border-orange-500', 'text-orange-600');
+                inactiveTab.classList.add('border-transparent', 'text-gray-500');
+                
+                // Show/hide sections
+                activeSection.classList.remove('hidden');
+                inactiveSection.classList.add('hidden');
+            }
+
+            // Tab event listeners
+            bookingsTab.addEventListener('click', function() {
+                switchTab(bookingsTab, bookingsSection, hotelsTab, hotelsSection);
+            });
+
+            hotelsTab.addEventListener('click', function() {
+                switchTab(hotelsTab, hotelsSection, bookingsTab, bookingsSection);
+                loadHotels(); // Load hotels when tab is clicked
+            });
+
+            // Function to create hotel card HTML
+            function createHotelCard(hotel) {
+                const avgRating = hotel.reviews && hotel.reviews.length > 0 
+                    ? (hotel.reviews.reduce((sum, review) => sum + review.rating, 0) / hotel.reviews.length).toFixed(1)
+                    : null;
+
+                const lastUpdated = new Date(hotel.lastUpdated).toLocaleDateString();
+
+                return `
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200">
+                        <img src="${hotel.images && hotel.images.length > 0 ? hotel.images[0] : 'https://images.unsplash.com/photo-1657002865844-c4127d542c41?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTV8fGhvdGVscyUyMGRlZmF1bHR8ZW58MHx8MHx8fDA%3D'}" 
+                             class="w-full h-48 object-cover" alt="${hotel.title}">
+                        <div class="p-4">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">${hotel.title}</h3>
+                            <p class="text-gray-600 text-sm mb-2">${hotel.location}, ${hotel.country}</p>
+                            <p class="text-orange-600 font-bold text-lg mb-2">₹${hotel.price.toLocaleString("en-IN")}/night</p>
+                            ${avgRating ? `<p class="text-sm text-gray-600 mb-2">Rating: ${avgRating} ⭐ (${hotel.reviews.length} reviews)</p>` : '<p class="text-sm text-gray-600 mb-2">No reviews yet</p>'}
+                            <p class="text-xs text-gray-500 mb-3">Last updated: ${lastUpdated}</p>
+                            <div class="flex gap-2">
+                                <a href="/listings/${hotel._id}" class="flex-1 px-3 py-2 bg-orange-600 text-white text-center rounded-md hover:bg-orange-700 transition-colors duration-200 text-sm">
+                                    View
+                                </a>
+                                <a href="/listings/${hotel._id}/edit" class="flex-1 px-3 py-2 bg-gray-600 text-white text-center rounded-md hover:bg-gray-700 transition-colors duration-200 text-sm">
+                                    Edit
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Function to load hotels
+            async function loadHotels() {
+                try {
+                    const response = await fetch('/dashboard/hotels');
+                    const data = await response.json();
+
+                    if (data.success) {
+                        if (data.hotels.length === 0) {
+                            hotelsContainer.innerHTML = `
+                                <div class="bg-white rounded-xl p-8 shadow text-center text-gray-500">
+                                    <h4 class="text-lg font-semibold mb-2">No hotels found</h4>
+                                    <p class="mb-4">You haven't added any hotels yet.</p>
+                                    <a href="/listings/new" class="inline-block px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors duration-200">
+                                        Add Your First Hotel
+                                    </a>
+                                </div>
+                            `;
+                        } else {
+                            const hotelsGrid = `
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    ${data.hotels.map(createHotelCard).join('')}
+                                </div>
+                            `;
+                            hotelsContainer.innerHTML = hotelsGrid;
+                        }
+                    } else {
+                        throw new Error('Failed to load hotels');
+                    }
+                } catch (error) {
+                    console.error('Error loading hotels:', error);
+                    hotelsContainer.innerHTML = `
+                        <div class="bg-white rounded-xl p-8 shadow text-center text-red-500">
+                            <h4 class="text-lg font-semibold mb-2">Error Loading Hotels</h4>
+                            <p>Please try again later.</p>
+                        </div>
+                    `;
+                }
+            }
+
+            // Function to show loading state
+            function showLoading() {
+                searchBtn.disabled = true;
+                searchText.classList.add('hidden');
+                searchSpinner.classList.remove('hidden');
+            }
+
+            // Function to hide loading state
+            function hideLoading() {
+                searchBtn.disabled = false;
+                searchText.classList.remove('hidden');
+                searchSpinner.classList.add('hidden');
+            }
+
+            // Function to create booking row HTML
+            function createBookingRow(booking) {
+                const bookingDate = new Date(booking.createdAt).toLocaleString();
+                return `
+                    <tr class="hover:bg-orange-50">
+                        <td class="px-6 py-4 font-medium">${booking.listing.title}</td>
+                        <td class="px-6 py-4">${booking.listing.location}</td>
+                        <td class="px-6 py-4">${booking.user.name} <br><span class="text-xs text-gray-500">${booking.user.email}</span></td>
+                        <td class="px-6 py-4">${booking.checkIn}</td>
+                        <td class="px-6 py-4">${booking.checkOut}</td>
+                        <td class="px-6 py-4">${booking.guests}</td>
+                        <td class="px-6 py-4 text-green-600 font-semibold">₹${booking.totalAmount}</td>
+                        <td class="px-6 py-4 text-gray-500 text-sm">${bookingDate}</td>
+                        <td class="px-6 py-4">
+                            <a href="/profile/cancel/${booking._id}" class="text-red-600 hover:text-red-800">Cancel</a>
+                        </td>
+                    </tr>
+                `;
+            }
+
+            // Function to perform search
+            async function performSearch() {
+                const searchValue = searchInput.value.trim();
+                console.log('Searching for:', searchValue);
+
+                if (!searchValue) {
+                    // If no search term, restore original bookings
+                    if (originalBookings) {
+                        bookingsContainer.innerHTML = originalBookings;
+                    }
+                    searchResultsInfo.classList.add('hidden');
+                    return;
+                }
+
+                showLoading();
+
+                try {
+                    const params = new URLSearchParams();
+                    params.append('search', searchValue);
+
+                    const response = await fetch(`/dashboard/search?${params}`);
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // Update bookings
+                        if (data.bookings.length === 0) {
+                            bookingsContainer.innerHTML = `
+                                <div class="bg-white rounded-xl p-6 shadow text-center text-gray-500">
+                                    <h4 class="text-lg font-semibold mb-2">No bookings found</h4>
+                                    <p>No bookings match your search criteria.</p>
+                                </div>
+                            `;
+                        } else {
+                            const tableHTML = `
+                                <div class="bg-white shadow rounded-xl overflow-hidden">
+                                    <div class="bg-gradient-to-r from-orange-300 to-orange-500 text-white px-6 py-4 text-lg font-semibold">
+                                        Booking Overview
+                                    </div>
+                                    <div class="overflow-x-auto">
+                                        <table class="min-w-full text-sm text-left">
+                                            <thead class="bg-orange-100 text-orange-800 uppercase text-xs">
+                                                <tr>
+                                                    <th class="px-6 py-3">Hotel</th>
+                                                    <th class="px-6 py-3">Location</th>
+                                                    <th class="px-6 py-3">User</th>
+                                                    <th class="px-6 py-3">Check-in</th>
+                                                    <th class="px-6 py-3">Check-out</th>
+                                                    <th class="px-6 py-3">Guests</th>
+                                                    <th class="px-6 py-3">Amount</th>
+                                                    <th class="px-6 py-3">Booked On</th>
+                                                    <th class="px-6 py-3">Cancel Booking</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="divide-y divide-orange-100 bg-white">
+                                                ${data.bookings.map(createBookingRow).join('')}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            `;
+                            bookingsContainer.innerHTML = tableHTML;
+                        }
+
+                        // Update results info
+                        searchResultsInfo.textContent = `Found ${data.count} booking(s) for "${searchValue}"`;
+                        searchResultsInfo.classList.remove('hidden');
+                    } else {
+                        throw new Error('Search failed');
+                    }
+                } catch (error) {
+                    console.error('Search error:', error);
+                    bookingsContainer.innerHTML = `
+                        <div class="bg-white rounded-xl p-6 shadow text-center text-red-500">
+                            <h4 class="text-lg font-semibold mb-2">Search Error</h4>
+                            <p>Please try again later.</p>
+                        </div>
+                    `;
+                    searchResultsInfo.classList.add('hidden');
+                } finally {
+                    hideLoading();
+                }
+            }
+
+            // Function to clear search
+            function clearSearch() {
+                searchInput.value = '';
+                if (originalBookings) {
+                    bookingsContainer.innerHTML = originalBookings;
+                }
+                searchResultsInfo.classList.add('hidden');
+            }
+
+            // Event listeners
+            searchBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                performSearch();
+            });
+
+            clearBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                clearSearch();
+            });
+
+            // Real-time search on input (with debouncing)
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    if (searchInput.value.trim().length >= 2 || searchInput.value.trim().length === 0) {
+                        performSearch();
+                    }
+                }, 500); // Wait 500ms after user stops typing
+            });
+
+            // Form submit handler
+            searchForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                performSearch();
+            });
+        });
+    </script>
+<script src="https://cdn.tailwindcss.com"></script>
+</body>
+</html>

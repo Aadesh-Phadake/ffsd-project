@@ -22,6 +22,7 @@ const listingRouter = require('./routes/listing');
 const reviewRouter = require('./routes/review');
 const userRouter = require('./routes/user');
 const paymentRouter = require('./routes/payment');
+const taxiRouter = require('./routes/taxi');
 const MongoStore = require('connect-mongo');
 
 const PORT = process.env.PORT || 8080; // Default to 8080 if no environment variable is set
@@ -96,6 +97,7 @@ app.use('/listings', listingRouter);
 app.use('/listings/:id/reviews', reviewRouter);
 app.use('/', userRouter);
 app.use('/payment', paymentRouter);
+app.use('/', taxiRouter);
 
 // Root Route
 app.get('/', (req, res) => {
@@ -104,10 +106,29 @@ app.get('/', (req, res) => {
 
 // Profile Route (explicit registration)
 app.get('/profile', isLoggedIn, wrapAsync(async (req, res) => {
-    const bookings = await Booking.find({ user: req.user._id })
-        .populate('listing')
-        .sort('-createdAt');
-    res.render('users/profile', { bookings });
+    try {
+        const bookings = await Booking.find({ user: req.user._id })
+            .populate({
+                path: 'listing',
+                options: { strictPopulate: false }
+            })
+            .sort('-createdAt');
+        
+        // Filter out bookings where listing is null (deleted listings)
+        const validBookings = bookings.filter(booking => booking.listing !== null);
+        
+        res.render('users/profile', { 
+            bookings: validBookings,
+            currentUser: req.user 
+        });
+    } catch (error) {
+        console.error('Error fetching bookings:', error);
+        req.flash('error', 'Error loading your bookings. Please try again.');
+        res.render('users/profile', { 
+            bookings: [],
+            currentUser: req.user 
+        });
+    }
 }));
 
 // Admin middleware
@@ -122,8 +143,55 @@ function requireAdmin(req, res, next) {
 
 // Admin routes
 app.get("/admin", requireAdmin, async (req, res) => {
+    // Get filter parameters from query string
+    const { startDate, endDate, filterType = 'createdAt' } = req.query;
+    
+    // Build filter query based on date range and filter type
+    let filterQuery = {};
+    
+    if (startDate || endDate) {
+        if (filterType === 'createdAt') {
+            // Filter by booking creation date
+            if (startDate && endDate) {
+                filterQuery.createdAt = {
+                    $gte: new Date(startDate),
+                    $lte: new Date(endDate + 'T23:59:59.999Z')
+                };
+            } else if (startDate) {
+                filterQuery.createdAt = { $gte: new Date(startDate) };
+            } else if (endDate) {
+                filterQuery.createdAt = { $lte: new Date(endDate + 'T23:59:59.999Z') };
+            }
+        } else if (filterType === 'checkIn') {
+            // Filter by check-in date (stored as string, need to convert)
+            if (startDate && endDate) {
+                filterQuery.checkIn = {
+                    $gte: startDate,
+                    $lte: endDate
+                };
+            } else if (startDate) {
+                filterQuery.checkIn = { $gte: startDate };
+            } else if (endDate) {
+                filterQuery.checkIn = { $lte: endDate };
+            }
+        } else if (filterType === 'checkOut') {
+            // Filter by check-out date (stored as string, need to convert)
+            if (startDate && endDate) {
+                filterQuery.checkOut = {
+                    $gte: startDate,
+                    $lte: endDate
+                };
+            } else if (startDate) {
+                filterQuery.checkOut = { $gte: startDate };
+            } else if (endDate) {
+                filterQuery.checkOut = { $lte: endDate };
+            }
+        }
+    }
+
     // Fetch filtered bookings
-    const bookings = await Booking.find({});
+    const bookings = await Booking.find(filterQuery);
+    
     // Calculate total revenue
     const totalRevenue = bookings.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
     // Total bookings
@@ -135,15 +203,16 @@ app.get("/admin", requireAdmin, async (req, res) => {
     // Occupancy rate (simple version)
     const occupancyRate = totalHotels ? ((totalBookings / totalHotels) * 100).toFixed(2) : 0;
 
-    // Recent Activity: last 5 bookings
-    const recentBookings = await Booking.find({})
+    // Recent Activity: last 5 bookings (using same filter)
+    const recentBookings = await Booking.find(filterQuery)
         .sort({ createdAt: -1 })
         .limit(5)
         .populate('user', 'username')
         .populate('listing', 'title');
 
-    // Most Booked Hotels: aggregate top 5
+    // Most Booked Hotels: aggregate top 5 (using same filter)
     const mostBooked = await Booking.aggregate([
+        { $match: filterQuery },
         { $group: { _id: "$listing", count: { $sum: 1 } } },
         { $sort: { count: -1 } },
         { $limit: 5 }
@@ -166,7 +235,43 @@ app.get("/admin", requireAdmin, async (req, res) => {
         stats: stats,
         currentUser: req.user,
         recentBookings,
-        mostBookedHotels: mostBookedHotels.filter(Boolean)
+        mostBookedHotels: mostBookedHotels.filter(Boolean),
+        startDate: startDate || '',
+        endDate: endDate || '',
+        filterType: filterType
+    });
+});
+
+// Cancel Booking Route
+app.delete('/profile/cancel/:id', isLoggedIn, wrapAsync(async (req, res) => {
+    const { id } = req.params;
+    const booking = await Booking.findById(id);
+    
+    if (!booking) {
+        req.flash('error', 'Booking not found');
+        return res.redirect('/profile');
+    }
+    
+    // Check if the booking belongs to the current user
+    if (booking.user.toString() !== req.user._id.toString()) {
+        req.flash('error', 'You are not authorized to cancel this booking');
+        return res.redirect('/profile');
+    }
+    
+    await Booking.findByIdAndDelete(id);
+    req.flash('success', 'Booking cancelled successfully');
+    res.redirect('/profile');
+}));
+
+// Logout route
+app.get("/logout", (req, res) => {
+    req.logout((err) => {
+        if (err) {
+            req.flash('error', 'Error logging out');
+            return res.redirect('/admin');
+        }
+        req.flash('success', 'Successfully logged out');
+        res.redirect('/login');
     });
 });
 

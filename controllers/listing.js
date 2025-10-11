@@ -38,6 +38,49 @@ module.exports.index = async (req, res) => {
     res.render('listings/index.ejs', { listings });
 };
 
+module.exports.search = async (req, res) => {
+    let { search, price, rating } = req.query;
+    let filter = {};
+
+    if (search) {
+        filter.$or = [
+            { title: { $regex: search, $options: 'i' } },
+            { location: { $regex: search, $options: 'i' } }
+        ];
+    }
+
+    if (price) {
+        if (price === '0-1000') {
+            filter.price = { $lte: 1000 };
+        } else if (price === '1000-2000') {
+            filter.price = { $gt: 1000, $lte: 2000 };
+        } else if (price === '2000-3000') {
+            filter.price = { $gt: 2000, $lte: 3000 };
+        } else if (price === '3000+') {
+            filter.price = { $gt: 3000 };
+        }
+    }
+
+    let listings = await Listing.find(filter).populate('reviews');
+
+    if (rating) {
+        listings = listings.filter(listing => {
+            if (listing.reviews && listing.reviews.length > 0) {
+                const avgRating = listing.reviews.reduce((sum, review) => sum + review.rating, 0) / listing.reviews.length;
+                return avgRating >= parseInt(rating);
+            }
+            return false;
+        });
+    }
+
+    // Return JSON for AJAX requests
+    res.json({ 
+        success: true, 
+        listings: listings,
+        count: listings.length 
+    });
+};
+
 module.exports.new = async (req, res) => {
     res.render('listings/new.ejs');
 };

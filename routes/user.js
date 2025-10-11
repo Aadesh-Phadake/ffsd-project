@@ -36,4 +36,8 @@ router.get('/api/profile/cancel/:id/details', isLoggedIn, wrapAsync(userControll
 router.post('/api/profile/cancel/:id/confirm', isLoggedIn, wrapAsync(userController.confirmCancellationAjax));
 router.post('/api/membership/activate', isLoggedIn, wrapAsync(userController.activateMembershipAjax));
 
+router.get('/dashboard/search', isLoggedIn, wrapAsync(userController.searchDashboard));
+
+router.get('/dashboard/hotels', isLoggedIn, wrapAsync(userController.getUserHotels));
+
 module.exports = router;
