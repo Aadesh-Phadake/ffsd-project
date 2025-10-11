@@ -11,6 +11,8 @@ router.route('/')
     .get(wrapAsync(listingController.index)) 
     .post(isLoggedIn,validateListing,wrapAsync(listingController.create));
 
+router.get('/search', wrapAsync(listingController.search));
+
 router.get('/new',isLoggedIn,wrapAsync(listingController.new));
 
 router.route('/:id')

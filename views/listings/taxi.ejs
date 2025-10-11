@@ -21,12 +21,12 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label">Pickup</label>
-                                <input type="text" class="form-control" id="pickup" readonly required>
+                                <input type="text" class="form-control" id="pickup" required placeholder="Enter pickup location">
                                 <button type="button" id="btn-my-location" class="btn btn-sm btn-outline-secondary mt-2">Use My Location</button>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Drop</label>
-                                <input type="text" class="form-control" id="drop" readonly required>
+                                <input type="text" class="form-control" id="drop" required placeholder="Enter drop location">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Approx Distance (km)</label>
@@ -40,6 +40,12 @@
                                     <option>Luxury</option>
                                 </select>
                             </div>
+                        </div>
+                        <div id="distance-error" class="alert alert-danger d-none mt-3">
+                            <i class="fas fa-exclamation-triangle"></i> Distance exceeds 50km. Taxi service is not available for this distance.
+                        </div>
+                        <div id="estimate-error" class="alert alert-warning d-none mt-3">
+                            <i class="fas fa-info-circle"></i> Please get an estimate first before proceeding to payment.
                         </div>
                         <div id="estimate" class="alert alert-secondary d-none mt-3"></div>
                         <div class="d-flex gap-2 mt-2">
@@ -60,11 +66,41 @@
 <script>
     const listingId = '<%= listing._id %>';
     const estimateDiv = document.getElementById('estimate');
+    const distanceErrorDiv = document.getElementById('distance-error');
+    const estimateErrorDiv = document.getElementById('estimate-error');
     const btnEstimate = document.getElementById('btn-estimate');
     const btnPay = document.getElementById('btn-pay');
+    const pickupInput = document.getElementById('pickup');
+    const dropInput = document.getElementById('drop');
 
     let lastEstimate = null;
     let lastOrder = null;
+    let geocodeTimeout = null;
+
+    function updateButtonStates() {
+        const distance = Number(document.getElementById('distance').value);
+        const hasEstimate = lastEstimate !== null;
+        
+        if (distance > 50) {
+            // Distance too far
+            btnEstimate.disabled = true;
+            btnPay.disabled = true;
+            btnEstimate.style.cursor = 'not-allowed';
+            btnPay.style.cursor = 'not-allowed';
+        } else if (!hasEstimate) {
+            // No estimate yet
+            btnEstimate.disabled = false;
+            btnPay.disabled = true;
+            btnEstimate.style.cursor = 'pointer';
+            btnPay.style.cursor = 'not-allowed';
+        } else {
+            // Ready to proceed
+            btnEstimate.disabled = false;
+            btnPay.disabled = false;
+            btnEstimate.style.cursor = 'pointer';
+            btnPay.style.cursor = 'pointer';
+        }
+    }
 
     async function postJSON(url, data) {
         const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
@@ -77,21 +113,31 @@
         const dropLocation = document.getElementById('drop').value.trim();
         const distanceKm = Number(document.getElementById('distance').value);
         const taxiType = document.getElementById('taxiType').value;
+        
+        // Clear previous messages
         estimateDiv.classList.add('d-none');
-        btnPay.disabled = true;
+        estimateErrorDiv.classList.add('d-none');
+        
         try {
             const est = await postJSON(`/listings/${listingId}/taxi/estimate`, { pickupLocation, dropLocation, distanceKm, taxiType });
             lastEstimate = est;
             estimateDiv.textContent = `Estimated Fare: ₹${est.fare} | ETA: ${est.timeMin} mins`;
             estimateDiv.classList.remove('d-none');
-            btnPay.disabled = false;
+            updateButtonStates();
         } catch (e) {
             estimateDiv.textContent = 'Failed to estimate. Ensure distance ≤ 50 km and inputs are valid.';
             estimateDiv.classList.remove('d-none');
+            updateButtonStates();
         }
     });
 
     btnPay.addEventListener('click', async () => {
+        // Check if estimate exists
+        if (!lastEstimate) {
+            estimateErrorDiv.classList.remove('d-none');
+            return;
+        }
+        
         const pickupLocation = document.getElementById('pickup').value.trim();
         const dropLocation = document.getElementById('drop').value.trim();
         const distanceKm = Number(document.getElementById('distance').value);
@@ -168,7 +214,17 @@
             let km = haversineKm({ lat: a.lat, lng: a.lng }, { lat: b.lat, lng: b.lng });
             km = Math.round(km * 10) / 10;
             document.getElementById('distance').value = km;
-            btnEstimate.disabled = !(km > 0 && km <= 50);
+            
+            // Show/hide distance error message
+            if (km > 50) {
+                distanceErrorDiv.classList.remove('d-none');
+                estimateErrorDiv.classList.add('d-none');
+            } else {
+                distanceErrorDiv.classList.add('d-none');
+            }
+            
+            // Update button states and cursor
+            updateButtonStates();
         }
     }
 
@@ -178,6 +234,7 @@
             pickupMarker.on('dragend', async () => {
                 const ll = pickupMarker.getLatLng();
                 document.getElementById('pickup').value = await reverseGeocode(ll.lat, ll.lng);
+                clearEstimate();
                 updateDistance();
             });
         } else {
@@ -193,6 +250,7 @@
             dropMarker.on('dragend', async () => {
                 const ll = dropMarker.getLatLng();
                 document.getElementById('drop').value = await reverseGeocode(ll.lat, ll.lng);
+                clearEstimate();
                 updateDistance();
             });
         } else {
@@ -246,6 +304,7 @@
         if (!(pickupMarker && dropMarker)) return;
         const a = pickupMarker.getLatLng();
         const b = dropMarker.getLatLng();
+        clearEstimate();
         await setPickup(b.lat, b.lng);
         await setDrop(a.lat, a.lng);
     });
@@ -258,6 +317,44 @@
             map.setView([latitude, longitude], 14);
             await setPickup(latitude, longitude);
         }, () => alert('Unable to get your location'));
+    });
+
+    // Function to clear estimate when locations change
+    function clearEstimate() {
+        lastEstimate = null;
+        estimateDiv.classList.add('d-none');
+        estimateErrorDiv.classList.add('d-none');
+        updateButtonStates();
+    }
+
+    // Geocoding when user types in pickup field
+    pickupInput.addEventListener('input', () => {
+        clearEstimate(); // Clear estimate when user changes pickup
+        clearTimeout(geocodeTimeout);
+        geocodeTimeout = setTimeout(async () => {
+            const query = pickupInput.value.trim();
+            if (query.length > 3) {
+                const geo = await geocode(query);
+                if (geo) {
+                    await setPickup(geo.lat, geo.lng);
+                }
+            }
+        }, 1000); // Wait 1 second after user stops typing
+    });
+
+    // Geocoding when user types in drop field
+    dropInput.addEventListener('input', () => {
+        clearEstimate(); // Clear estimate when user changes drop
+        clearTimeout(geocodeTimeout);
+        geocodeTimeout = setTimeout(async () => {
+            const query = dropInput.value.trim();
+            if (query.length > 3) {
+                const geo = await geocode(query);
+                if (geo) {
+                    await setDrop(geo.lat, geo.lng);
+                }
+            }
+        }, 1000); // Wait 1 second after user stops typing
     });
 </script>
 

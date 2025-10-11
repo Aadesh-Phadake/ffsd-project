@@ -53,4 +53,8 @@ router.get('/dashboard', isLoggedIn ,async (req, res) => {
     }
 });
 
+router.get('/dashboard/search', isLoggedIn, wrapAsync(userController.searchDashboard));
+
+router.get('/dashboard/hotels', isLoggedIn, wrapAsync(userController.getUserHotels));
+
 module.exports = router;

@@ -100,3 +100,105 @@ module.exports.deleteBooking = async (req, res) => {
     req.flash('success', 'Booking deleted successfully!');
     res.redirect('/profile');
 };
+
+module.exports.searchDashboard = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const { search, status, dateRange } = req.query;
+        
+        if (!userId) {
+            return res.status(401).json({ message: 'Unauthorized: No user ID found' });
+        }
+
+        // Find listings owned by this user
+        const userListings = await Listing.find({ owner: userId }, '_id');
+        const listingIds = userListings.map(listing => listing._id);
+
+        // Build search filter
+        let filter = { listing: { $in: listingIds } };
+
+        // Add search filter for hotel name, user name, or location
+        if (search) {
+            const bookings = await Booking.find(filter)
+                .populate('user', 'name email')
+                .populate('listing', 'title location')
+                .exec();
+            
+            // Filter by search term
+            const filteredBookings = bookings.filter(booking => {
+                const searchLower = search.toLowerCase();
+                return (
+                    booking.listing.title.toLowerCase().includes(searchLower) ||
+                    booking.listing.location.toLowerCase().includes(searchLower) ||
+                    booking.user.name.toLowerCase().includes(searchLower) ||
+                    booking.user.email.toLowerCase().includes(searchLower)
+                );
+            });
+
+            return res.json({ 
+                success: true, 
+                bookings: filteredBookings,
+                count: filteredBookings.length 
+            });
+        }
+
+        // Add status filter (if needed in future)
+        if (status) {
+            // You can add status logic here if you have booking statuses
+        }
+
+        // Add date range filter (if needed in future)
+        if (dateRange) {
+            // You can add date range logic here
+        }
+
+        // Default: return all bookings
+        const bookings = await Booking.find(filter)
+            .populate('user', 'name email')
+            .populate('listing', 'title location')
+            .sort('-createdAt')
+            .exec();
+
+        res.json({ 
+            success: true, 
+            bookings: bookings,
+            count: bookings.length 
+        });
+
+    } catch (error) {
+        console.error('Dashboard search error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error searching dashboard data' 
+        });
+    }
+};
+
+module.exports.getUserHotels = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        
+        if (!userId) {
+            return res.status(401).json({ message: 'Unauthorized: No user ID found' });
+        }
+
+        // Find all listings owned by this user
+        const hotels = await Listing.find({ owner: userId })
+            .populate('reviews')
+            .sort('-lastUpdated')
+            .exec();
+
+        res.json({ 
+            success: true, 
+            hotels: hotels,
+            count: hotels.length 
+        });
+
+    } catch (error) {
+        console.error('Get user hotels error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error fetching user hotels' 
+        });
+    }
+};
