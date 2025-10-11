@@ -1,61 +1,55 @@
-
-    
 <% layout('./layouts/boilerplate') %>
-<body class="bg-gradient-to-br from-orange-100 to-white min-h-screen text-gray-800">
 
-    <div class="max-w-6xl mx-auto py-12 px-4">
-        <h1 class="text-4xl font-bold text-center mb-10 text-orange-800">Your Listing Bookings</h1>
-        <% if (currentUser) { %>
-            <p>Welcome, <%= currentUser.name || currentUser.username %>!</p>
-        <% } else { %>
-            <p>No user is logged in.</p>
-        <% } %>
-        <% if (bookings.length === 0) { %>
-            <div class="bg-white rounded-xl p-6 shadow text-center text-gray-500">
-                No bookings found for your listings.
-            </div>
-        <% } else { %>
-            <div class="bg-white shadow rounded-xl overflow-hidden">
-                <div class="bg-gradient-to-r from-orange-300 to-orange-500 text-white px-6 py-4 text-lg font-semibold">
-                    Booking Overview
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Hotel Manager Dashboard</h3>
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full text-sm text-left">
-                        <thead class="bg-orange-100 text-orange-800 uppercase text-xs">
-                            <tr>
-                                <th class="px-6 py-3">Hotel</th>
-                                <th class="px-6 py-3">Location</th>
-                                <th class="px-6 py-3">User</th>
-                                <th class="px-6 py-3">Check-in</th>
-                                <th class="px-6 py-3">Check-out</th>
-                                <th class="px-6 py-3">Guests</th>
-                                <th class="px-6 py-3">Amount</th>
-                                <th class="px-6 py-3">Booked On</th>
-                                <th class="px-6 py-3">Cancel Booking</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-orange-100 bg-white">
-                            <% bookings.forEach(booking => { %>
-                                <tr class="hover:bg-orange-50">
-                                    <td class="px-6 py-4 font-medium"><%= booking.listing.title %></td>
-                                    <td class="px-6 py-4"><%= booking.listing.location %></td>
-                                    <td class="px-6 py-4"><%= booking.user.name %> <br><span class="text-xs text-gray-500"><%= booking.user.email %></span></td>
-                                    <td class="px-6 py-4"><%= booking.checkIn %></td>
-                                    <td class="px-6 py-4"><%= booking.checkOut %></td>
-                                    <td class="px-6 py-4"><%= booking.guests %></td>
-                                    <td class="px-6 py-4 text-green-600 font-semibold">₹<%= booking.totalAmount %></td>
-                                    <td class="px-6 py-4 text-gray-500 text-sm"><%= new Date(booking.createdAt).toLocaleString() %></td>
-                                    <td class="px-6 py-4">
-                                        <a href="/profile/cancel/<%= booking._id %>" class="text-red-600 hover:text-red-800">Cancel</a>
-                                    </td>
-                                </tr>
-                            <% }) %>
-                        </tbody>
-                    </table>
+                <div class="card-body">
+                    <% if (currentUser) { %>
+                        <p class="mb-4">Welcome, <%= currentUser.username %>!</p>
+                    <% } %>
+
+                    <% if (bookings && bookings.length > 0) { %>
+                        <h5 class="mb-3">Recent Bookings</h5>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Hotel</th>
+                                        <th>Guest</th>
+                                        <th>Check-in</th>
+                                        <th>Check-out</th>
+                                        <th>Guests</th>
+                                        <th>Amount</th>
+                                        <th>Booked On</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% bookings.forEach(booking => { %>
+                                        <tr>
+                                            <td><%= booking.listing ? booking.listing.title : 'N/A' %></td>
+                                            <td><%= booking.user ? booking.user.username : 'N/A' %></td>
+                                            <td><%= booking.checkIn %></td>
+                                            <td><%= booking.checkOut %></td>
+                                            <td><%= booking.guests %></td>
+                                            <td>₹<%= booking.totalAmount || 0 %></td>
+                                            <td><%= new Date(booking.createdAt).toLocaleDateString() %></td>
+                                        </tr>
+                                    <% }) %>
+                                </tbody>
+                            </table>
+                        </div>
+                    <% } else { %>
+                        <div class="alert alert-info">
+                            <h5>No bookings found</h5>
+                            <p>You don't have any bookings for your listings yet.</p>
+                        </div>
+                    <% } %>
                 </div>
             </div>
-        <% } %>
+        </div>
     </div>
-<script src="https://cdn.tailwindcss.com"></script>
-</body>
-</html>
+</div>

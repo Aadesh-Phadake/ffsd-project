@@ -1,6 +1,7 @@
 const User = require('../models/user');
 const Booking = require('../models/booking');
 const Listing = require('../models/listing');
+const Request = require('../models/request');
 
 module.exports.renderSignup = (req, res) => {
     res.render('users/signup');
@@ -122,6 +123,110 @@ module.exports.createBooking = async (req, res) => {
     req.flash('success', 'Booking confirmed successfully!');
     res.redirect('/profile');
 };
+
+// Create service request or complaint for a booking
+module.exports.createRequest = async (req, res) => {
+    const { bookingId } = req.params;
+    const { type, message } = req.body;
+
+    const booking = await Booking.findById(bookingId).populate('listing');
+    if (!booking) {
+        req.flash('error', 'Booking not found');
+        return res.redirect('/profile');
+    }
+    if (String(booking.user) !== String(req.user._id)) {
+        req.flash('error', 'Unauthorized');
+        return res.redirect('/profile');
+    }
+
+    // Basic check-in gate: allow once current date >= check-in date (supports DD-MM-YYYY)
+    const parseDMY = (dmy) => {
+        const [day, month, year] = (dmy || '').split('-').map(Number);
+        if (!day || !month || !year) return null;
+        return new Date(year, month - 1, day);
+    };
+    const now = new Date();
+    const checkInDate = parseDMY(booking.checkIn);
+    if (checkInDate && now < checkInDate) {
+        req.flash('error', 'You can request services/complaints after check-in.');
+        return res.redirect('/profile');
+    }
+
+    const newRequest = new Request({
+        user: req.user._id,
+        listing: booking.listing._id,
+        booking: booking._id,
+        type: type === 'complaint' ? 'complaint' : 'service',
+        message: (message || '').trim()
+    });
+    await newRequest.save();
+    req.flash('success', 'Submitted successfully. The hotel manager has been notified.');
+    res.redirect('/profile');
+};
+
+// Fetch requests for manager/owner across their listings
+module.exports.getOwnerRequests = async (req, res) => {
+    const ownerId = req.user._id;
+    const ownerListings = await Listing.find({ owner: ownerId }, '_id');
+    const listingIds = ownerListings.map(l => l._id);
+    const requests = await Request.find({ listing: { $in: listingIds } })
+        .populate('user', 'username email')
+        .populate('listing', 'title')
+        .populate('booking', 'checkIn checkOut')
+        .sort({ createdAt: -1 });
+    res.render('listings/dashboard', { bookings: [], currentUser: req.user, requests });
+};
+
+// Simple owner dashboard
+module.exports.ownerDashboard = async (req, res) => {
+    try {
+        const ownerId = req.user._id;
+        
+        // Find listings owned by this user
+        const ownerListings = await Listing.find({ owner: ownerId });
+        const listingIds = ownerListings.map(l => l._id);
+
+        // Find bookings for these listings
+        const bookings = await Booking.find({ listing: { $in: listingIds } })
+            .populate('user', 'username email')
+            .populate('listing', 'title location')
+            .sort({ createdAt: -1 })
+            .limit(20); // Show only recent 20 bookings
+
+        res.render('listings/dashboard', {
+            bookings,
+            currentUser: req.user
+        });
+    } catch (error) {
+        console.error('Dashboard error:', error);
+        req.flash('error', 'Error loading dashboard');
+        res.redirect('/listings');
+    }
+};
+
+// Update a request status (owner-only)
+module.exports.updateRequestStatus = async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+    const valid = ['open', 'in_progress', 'resolved'];
+    if (!valid.includes(status)) {
+        req.flash('error', 'Invalid status');
+        return res.redirect('/dashboard');
+    }
+    const requestDoc = await Request.findById(id).populate('listing');
+    if (!requestDoc) {
+        req.flash('error', 'Request not found');
+        return res.redirect('/dashboard');
+    }
+    if (String(requestDoc.listing.owner) !== String(req.user._id)) {
+        req.flash('error', 'Not authorized');
+        return res.redirect('/dashboard');
+    }
+    requestDoc.status = status;
+    await requestDoc.save();
+    req.flash('success', 'Request updated');
+    res.redirect('/dashboard');
+};
 module.exports.deleteBooking = async (req, res) => {
     const { id } = req.params;
     const booking = await Booking.findById(id).populate('listing');
@@ -236,4 +341,183 @@ module.exports.confirmCancellation = async (req, res) => {
     }
     
     res.redirect('/profile');
+};
+
+// AJAX API Methods
+
+// Get cancellation details for AJAX modal
+module.exports.getCancellationDetails = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const booking = await Booking.findById(id).populate('listing');
+        
+        if (!booking) {
+            return res.json({ success: false, error: 'Booking not found' });
+        }
+
+        // Check if user owns this booking
+        if (!booking.user.equals(req.user._id)) {
+            return res.json({ success: false, error: 'Unauthorized' });
+        }
+
+        // Calculate cancellation fee
+        const isActiveMember = req.user && req.user.isMember && req.user.membershipExpiresAt && new Date(req.user.membershipExpiresAt) > new Date();
+        const now = new Date();
+        
+        // Initialize cancellation tracking if not set (for existing members)
+        if (isActiveMember && !req.user.freeCancellationsResetAt) {
+            req.user.freeCancellationsResetAt = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+            req.user.freeCancellationsUsed = 0;
+            await req.user.save();
+        }
+        
+        // Reset free cancellations if it's a new month for members
+        if (isActiveMember && req.user.freeCancellationsResetAt && now > req.user.freeCancellationsResetAt) {
+            req.user.freeCancellationsUsed = 0;
+            req.user.freeCancellationsResetAt = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+            await req.user.save();
+        }
+
+        let cancellationFee = 0;
+        let canUseFreeCancellation = false;
+
+        if (isActiveMember && req.user.freeCancellationsUsed < 2) {
+            canUseFreeCancellation = true;
+            cancellationFee = 0;
+        } else {
+            cancellationFee = Math.round(booking.totalAmount * 0.1); // 10% fee
+        }
+
+        res.json({
+            success: true,
+            booking: {
+                _id: booking._id,
+                checkIn: booking.checkIn,
+                checkOut: booking.checkOut,
+                totalAmount: booking.totalAmount,
+                listing: {
+                    title: booking.listing.title
+                }
+            },
+            cancellationDetails: {
+                cancellationFee,
+                canUseFreeCancellation,
+                freeCancellationsUsed: req.user.freeCancellationsUsed || 0,
+                bookingAmount: booking.totalAmount
+            }
+        });
+    } catch (error) {
+        res.json({ success: false, error: 'Server error' });
+    }
+};
+
+// Confirm cancellation via AJAX
+module.exports.confirmCancellationAjax = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const booking = await Booking.findById(id).populate('listing');
+        
+        if (!booking) {
+            return res.json({ success: false, error: 'Booking not found' });
+        }
+
+        // Check if user owns this booking
+        if (!booking.user.equals(req.user._id)) {
+            return res.json({ success: false, error: 'Unauthorized' });
+        }
+
+        // Calculate cancellation fee
+        const isActiveMember = req.user && req.user.isMember && req.user.membershipExpiresAt && new Date(req.user.membershipExpiresAt) > new Date();
+        const now = new Date();
+        
+        // Initialize cancellation tracking if not set (for existing members)
+        if (isActiveMember && !req.user.freeCancellationsResetAt) {
+            req.user.freeCancellationsResetAt = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+            req.user.freeCancellationsUsed = 0;
+            await req.user.save();
+        }
+        
+        // Reset free cancellations if it's a new month for members
+        if (isActiveMember && req.user.freeCancellationsResetAt && now > req.user.freeCancellationsResetAt) {
+            req.user.freeCancellationsUsed = 0;
+            req.user.freeCancellationsResetAt = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+            await req.user.save();
+        }
+
+        let cancellationFee = 0;
+        let canUseFreeCancellation = false;
+
+        if (isActiveMember && req.user.freeCancellationsUsed < 2) {
+            canUseFreeCancellation = true;
+            cancellationFee = 0;
+        } else {
+            cancellationFee = Math.round(booking.totalAmount * 0.1); // 10% fee
+        }
+
+        // Update user's free cancellation count if applicable
+        if (canUseFreeCancellation) {
+            req.user.freeCancellationsUsed += 1;
+            if (!req.user.freeCancellationsResetAt) {
+                req.user.freeCancellationsResetAt = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+            }
+            await req.user.save();
+        }
+
+        // Delete the booking
+        await Booking.findByIdAndDelete(id);
+
+        let message = 'Booking cancelled successfully!';
+        if (cancellationFee > 0) {
+            message += ` Cancellation fee: ₹${cancellationFee}`;
+        } else {
+            message += ' No cancellation fee (free cancellation used).';
+        }
+
+        res.json({
+            success: true,
+            message: message,
+            user: {
+                isMember: req.user.isMember,
+                membershipExpiresAt: req.user.membershipExpiresAt,
+                freeCancellationsUsed: req.user.freeCancellationsUsed
+            }
+        });
+    } catch (error) {
+        res.json({ success: false, error: 'Server error' });
+    }
+};
+
+// Activate membership via AJAX
+module.exports.activateMembershipAjax = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.json({ success: false, error: 'User not found' });
+        }
+        
+        const now = new Date();
+        const expires = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        user.isMember = true;
+        user.membershipExpiresAt = expires;
+        
+        // Initialize cancellation tracking for new members
+        if (!user.freeCancellationsResetAt) {
+            user.freeCancellationsResetAt = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+            user.freeCancellationsUsed = 0;
+        }
+        
+        await user.save();
+        
+        res.json({
+            success: true,
+            message: 'Membership activated for 30 days!',
+            user: {
+                isMember: user.isMember,
+                membershipExpiresAt: user.membershipExpiresAt,
+                freeCancellationsUsed: user.freeCancellationsUsed
+            }
+        });
+    } catch (error) {
+        res.json({ success: false, error: 'Could not activate membership' });
+    }
 };

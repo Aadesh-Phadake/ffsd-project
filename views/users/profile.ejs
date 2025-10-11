@@ -1,5 +1,9 @@
 <% layout('./layouts/boilerplate') %>
-<div class="container mt-5">
+
+<!-- Include AJAX CSS -->
+<link rel="stylesheet" href="/css/profile-ajax.css">
+
+<div class="container mt-5 mb-5 profile-page">
     <div class="row">
         <div class="col-md-8 offset-md-2">
             <div class="card shadow-sm">
@@ -12,13 +16,15 @@
                         <p>
                             <strong>Membership:</strong>
                             <% const activeMember = currentUser && currentUser.isMember && currentUser.membershipExpiresAt && new Date(currentUser.membershipExpiresAt) > new Date(); %>
-                            <% if (activeMember) { %>
-                                <span class="badge bg-success">Active until <%= new Date(currentUser.membershipExpiresAt).toLocaleDateString() %></span>
-                                <br><small class="text-muted">Free cancellations used: <%= currentUser.freeCancellationsUsed || 0 %>/2 this month</small>
-                            <% } else { %>
-                                <span class="badge bg-secondary">Inactive</span>
-                                <a href="/payment/membership" class="btn btn-sm btn-primary ms-2">Activate ₹999/month</a>
-                            <% } %>
+                            <span class="membership-info">
+                                <% if (activeMember) { %>
+                                    <span class="badge bg-success">Active until <%= new Date(currentUser.membershipExpiresAt).toLocaleDateString() %></span>
+                                    <br><small class="text-muted">Free cancellations used: <%= currentUser.freeCancellationsUsed || 0 %>/2 this month</small>
+                                <% } else { %>
+                                    <span class="badge bg-secondary">Inactive</span>
+                                    <button class="btn btn-sm btn-primary ms-2 activate-membership-btn">Activate ₹999/month</button>
+                                <% } %>
+                            </span>
                         </p>
                     </div>
 
@@ -26,7 +32,7 @@
                         <h5>My Bookings</h5>
                         <% if (bookings && bookings.length > 0) { %>
                             <% bookings.forEach(booking => { %>
-                                <div class="card mb-3">
+                                <div class="card mb-3 booking-card" data-booking-id="<%= booking._id %>" data-check-in="<%= booking.checkIn %>" data-check-out="<%= booking.checkOut %>">
                                     <div class="card-body">
                                         <% if (booking.listing) { %>
                                             <h5 class="card-title"><%= booking.listing.title %></h5>
@@ -38,12 +44,13 @@
                                             <p><strong>Check-out:</strong> <%= booking.checkOut %></p>
                                             <p><strong>Guests:</strong> <%= booking.guests %></p>
                                             <p><strong>Total Amount:</strong> ₹<%= (booking.totalAmount || 0).toLocaleString("en-IN") %></p>
-                                            <p><strong>Status:</strong> <span class="badge bg-success">Confirmed</span></p>
+                                            <p><strong>Status:</strong> <span class="badge bg-success booking-status">Confirmed</span></p>
+                                            <div class="booking-countdown"></div>
                                         </div>
                                         <% if (booking.listing) { %>
                                             <a href="/listings/<%= booking.listing._id %>" class="btn btn-sm add-btn">View Property</a>
                                         <% } %>
-                                        <a href="/profile/cancel/<%= booking._id %>" class="btn btn-sm btn-danger">Cancel Booking</a>
+                                        <button class="btn btn-sm btn-danger cancel-booking-btn" data-booking-id="<%= booking._id %>">Cancel Booking</button>
                                     </div>
                                 </div>
                             <% }) %>
@@ -57,4 +64,7 @@
             </div>
         </div>
     </div>
-</div> 
+</div>
+
+<!-- Include AJAX functionality -->
+<script src="/js/profile-ajax-simple.js"></script> 
