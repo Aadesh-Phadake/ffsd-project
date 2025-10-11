@@ -1,0 +1,54 @@
+<% layout('./layouts/boilerplate') %>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h4 class="mb-3">Activate Membership</h4>
+                    <p>Enjoy zero booking fees for 30 days, priority support, and more.</p>
+                    <ul>
+                        <li>Zero service fees on bookings</li>
+                        <li>2 free cancellations per month</li>
+                        <li>Priority support</li>
+                        <li>Member-only deals</li>
+                    </ul>
+                    <form id="membership-form" action="/payment/membership/verify" method="POST">
+                        <input type="hidden" id="razorpay_order_id" name="razorpay_order_id">
+                        <input type="hidden" id="razorpay_payment_id" name="razorpay_payment_id">
+                        <input type="hidden" id="razorpay_signature" name="razorpay_signature">
+                        <button type="button" id="pay-button" class="btn btn-primary">Pay ₹999</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+    const options = {
+        key: "<%= process.env.RAZORPAY_KEY_ID %>",
+        amount: "<%= (amount).toString() %>",
+        currency: "INR",
+        name: "Membership Activation",
+        description: "Monthly membership",
+        order_id: "<%= orderId %>",
+        handler: function (response) {
+            document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
+            document.getElementById('razorpay_order_id').value = response.razorpay_order_id;
+            document.getElementById('razorpay_signature').value = response.razorpay_signature;
+            document.getElementById('membership-form').submit();
+        },
+        prefill: {
+            name: "<%= user.username %>",
+            email: "<%= user.email %>"
+        },
+        theme: { color: "#0d6efd" }
+    };
+    const rz = new Razorpay(options);
+    document.getElementById('pay-button').onclick = function(e){
+        rz.open();
+        e.preventDefault();
+    };
+</script>
+

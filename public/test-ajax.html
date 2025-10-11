@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AJAX Test Page</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/profile-ajax.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>AJAX Features Test Page</h2>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Test Toast Notifications</h5>
+                    </div>
+                    <div class="card-body">
+                        <button class="btn btn-success me-2" onclick="testToast('success')">Success Toast</button>
+                        <button class="btn btn-danger me-2" onclick="testToast('error')">Error Toast</button>
+                        <button class="btn btn-info" onclick="testToast('info')">Info Toast</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Test Modal</h5>
+                    </div>
+                    <div class="card-body">
+                        <button class="btn btn-primary" onclick="testModal()">Test Modal</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Console Output</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="console-output" style="background: #f8f9fa; padding: 10px; border-radius: 5px; font-family: monospace; height: 200px; overflow-y: auto;">
+                            <div>Console output will appear here...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/profile-ajax.js"></script>
+    
+    <script>
+        // Override console.log to show output on page
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        function addToConsole(message, type = 'log') {
+            const output = document.getElementById('console-output');
+            const div = document.createElement('div');
+            div.className = `text-${type === 'error' ? 'danger' : type === 'warn' ? 'warning' : 'dark'}`;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            output.appendChild(div);
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addToConsole(args.join(' '), 'log');
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addToConsole(args.join(' '), 'error');
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            addToConsole(args.join(' '), 'warn');
+        };
+        
+        // Test functions
+        function testToast(type) {
+            console.log(`Testing ${type} toast...`);
+            if (window.profileManager) {
+                window.profileManager.showToast(`This is a ${type} message!`, type);
+            } else {
+                console.error('ProfileManager not found!');
+            }
+        }
+        
+        function testModal() {
+            console.log('Testing modal...');
+            if (typeof bootstrap !== 'undefined') {
+                console.log('Bootstrap is available');
+                // Create a simple test modal
+                const modalHtml = `
+                    <div class="modal fade" id="testModal" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Test Modal</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p>This is a test modal to verify Bootstrap is working correctly.</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Remove existing modal
+                const existingModal = document.getElementById('testModal');
+                if (existingModal) {
+                    existingModal.remove();
+                }
+                
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                const modal = new bootstrap.Modal(document.getElementById('testModal'));
+                modal.show();
+            } else {
+                console.error('Bootstrap is not available!');
+            }
+        }
+        
+        // Make ProfileManager globally available for testing
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded, checking for ProfileManager...');
+            setTimeout(() => {
+                if (window.profileManager) {
+                    console.log('ProfileManager is available globally');
+                } else {
+                    console.warn('ProfileManager not found globally');
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
+

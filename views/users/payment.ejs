@@ -38,13 +38,20 @@
                     <div class="price-label">Base Price</div>
                     <div class="price-value">₹<%= property.price.toLocaleString("en-IN") %></div>
                 </div>
+                <% if (!isMember) { %>
                 <div class="price-row">
                     <div class="price-label">Admin Fee (5%)</div>
                     <div class="price-value">₹<%= (property.price * 0.05).toLocaleString("en-IN") %></div>
                 </div>
+                <% } else { %>
+                <div class="price-row">
+                    <div class="price-label">Admin Fee</div>
+                    <div class="price-value text-success">₹0 (Membership)</div>
+                </div>
+                <% } %>
                 <div class="price-row total highlighted-total">
                     <div class="price-label">Total Amount</div>
-                    <div class="price-value">₹<%= (property.price * 1.05).toLocaleString("en-IN") %></div>
+                    <div class="price-value">₹<%= (isMember ? property.price : property.price * 1.05).toLocaleString("en-IN") %></div>
                 </div>
             </div>
         </div>
@@ -91,7 +98,7 @@
 
                 <button type="button" id="pay-button" class="pay-button">
                     <span class="button-text">Pay Now</span>
-                    <span class="button-amount">₹<%= (property.price * 1.05).toLocaleString("en-IN") %></span>
+                    <span class="button-amount">₹<%= (isMember ? property.price : property.price * 1.05).toLocaleString("en-IN") %></span>
                 </button>
             </form>
         </div>
@@ -338,7 +345,7 @@
 <script>
     const options = {
         key: "<%= process.env.RAZORPAY_KEY_ID %>",
-        amount: "<%= (property.price * 1.05 * 100).toFixed(0) %>", // Total amount including 5% admin fee
+        amount: "<%= ((isMember ? property.price : property.price * 1.05) * 100).toFixed(0) %>", // membership aware
         currency: "INR",
         name: "Property Booking",
         description: "Payment for <%= property.title %>",
