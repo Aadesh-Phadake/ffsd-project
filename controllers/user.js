@@ -204,6 +204,18 @@ module.exports.ownerDashboard = async (req, res) => {
     }
 };
 
+module.exports.getUserHotels = async (req, res) => {
+    try {
+        const ownerId = req.user._id;
+        const hotels = await Listing.find({ owner: ownerId }).sort({ createdAt: -1 });
+        res.json({ success: true, hotels });
+    } catch (error) {
+        console.error('Error fetching user hotels:', error);
+        res.status(500).json({ success: false, error: 'Server error' });
+    }
+};
+
+
 // Update a request status (owner-only)
 module.exports.updateRequestStatus = async (req, res) => {
     const { id } = req.params;
