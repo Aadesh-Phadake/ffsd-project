@@ -1,0 +1,155 @@
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
+const Listing = require('../models/listing');
+const TaxiBooking = require('../models/taxiBooking');
+
+const RADIUS_KM = 50;
+const BASE_PER_KM = {
+    Standard: 15,
+    SUV: 22,
+    Luxury: 35,
+};
+const AVG_SPEED_KMPH = 35; // simple ETA estimate
+
+const razorpay = new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
+
+function clampRadius(distanceKm) {
+    return distanceKm <= RADIUS_KM;
+}
+
+function estimateFareAndTime(distanceKm, taxiType) {
+    const perKm = BASE_PER_KM[taxiType] || BASE_PER_KM.Standard;
+    const fare = Math.max(0, distanceKm) * perKm;
+    const timeMin = Math.ceil((Math.max(1, distanceKm) / AVG_SPEED_KMPH) * 60);
+    return { fare: Math.round(fare), timeMin };
+}
+
+module.exports.renderTaxiPage = async (req, res) => {
+    const { id } = req.params; // listing id
+    const listing = await Listing.findById(id);
+    if (!listing) {
+        req.flash('error', 'Hotel not found');
+        return res.redirect('/listings');
+    }
+    res.render('listings/taxi', { listing, currentUser: req.user });
+};
+
+module.exports.estimate = async (req, res) => {
+    try {
+        const { id } = req.params; // listing id
+        const { pickupLocation, dropLocation, distanceKm, taxiType } = req.body;
+
+        const listing = await Listing.findById(id);
+        if (!listing) return res.status(404).json({ message: 'Hotel not found' });
+
+        const d = Number(distanceKm);
+        if (!pickupLocation || !dropLocation || !taxiType || isNaN(d) || d <= 0) {
+            return res.status(400).json({ message: 'Invalid input' });
+        }
+        if (!clampRadius(d)) {
+            return res.status(400).json({ message: `Drop must be within ${RADIUS_KM} km` });
+        }
+        const { fare, timeMin } = estimateFareAndTime(d, taxiType);
+        return res.json({ fare, timeMin });
+    } catch (e) {
+        console.error('Estimate error:', e);
+        return res.status(500).json({ message: 'Server error' });
+    }
+};
+
+module.exports.createOrder = async (req, res) => {
+    try {
+        const { id } = req.params; // listing id
+        const { pickupLocation, dropLocation, distanceKm, taxiType } = req.body;
+
+        const listing = await Listing.findById(id);
+        if (!listing) return res.status(404).json({ message: 'Hotel not found' });
+
+        const d = Number(distanceKm);
+        if (!pickupLocation || !dropLocation || !taxiType || isNaN(d) || d <= 0) {
+            return res.status(400).json({ message: 'Invalid input' });
+        }
+        if (!clampRadius(d)) {
+            return res.status(400).json({ message: `Drop must be within ${RADIUS_KM} km` });
+        }
+        const { fare, timeMin } = estimateFareAndTime(d, taxiType);
+
+        const order = await razorpay.orders.create({
+            amount: fare * 100,
+            currency: 'INR',
+            receipt: `taxi_${Date.now()}`,
+        });
+
+        const booking = await TaxiBooking.create({
+            user: req.user._id,
+            listing: listing._id,
+            pickupLocation,
+            dropLocation,
+            distanceKm: d,
+            estimatedTimeMin: timeMin,
+            taxiType,
+            fareAmount: fare,
+            paymentStatus: 'Pending',
+            bookingStatus: 'Created',
+            razorpayOrderId: order.id,
+        });
+
+        return res.json({
+            orderId: order.id,
+            amount: fare,
+            currency: 'INR',
+            bookingId: booking._id,
+            keyId: process.env.RAZORPAY_KEY_ID,
+        });
+    } catch (e) {
+        console.error('Create taxi order error:', e);
+        return res.status(500).json({ message: 'Server error' });
+    }
+};
+
+module.exports.verifyPayment = async (req, res) => {
+    try {
+        const { bookingId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+        const booking = await TaxiBooking.findById(bookingId);
+        if (!booking || booking.razorpayOrderId !== razorpay_order_id) {
+            req.flash('error', 'Invalid booking/payment');
+            return res.redirect('/profile');
+        }
+
+        const sign = `${razorpay_order_id}|${razorpay_payment_id}`;
+        const expectedSign = crypto
+            .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+            .update(sign)
+            .digest('hex');
+
+        if (expectedSign !== razorpay_signature) {
+            await TaxiBooking.findByIdAndUpdate(bookingId, { paymentStatus: 'Failed' });
+            req.flash('error', 'Payment verification failed');
+            return res.redirect('/profile');
+        }
+
+        await TaxiBooking.findByIdAndUpdate(bookingId, {
+            paymentStatus: 'Paid',
+            bookingStatus: 'Confirmed',
+            razorpayPaymentId: razorpay_payment_id,
+        });
+        req.flash('success', 'Taxi booked successfully!');
+        return res.redirect('/taxis/bookings');
+    } catch (e) {
+        console.error('Verify taxi payment error:', e);
+        req.flash('error', 'Server error');
+        return res.redirect('/profile');
+    }
+};
+
+module.exports.userBookings = async (req, res) => {
+    const bookings = await TaxiBooking.find({ user: req.user._id })
+        .populate('listing')
+        .sort('-createdAt');
+    res.render('users/taxiBookings', { bookings, currentUser: req.user });
+};
+
+

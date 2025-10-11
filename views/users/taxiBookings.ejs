@@ -1,0 +1,33 @@
+<% layout('./layouts/boilerplate') %>
+<div class="container mt-4">
+    <h4 class="mb-3">My Taxi Bookings</h4>
+    <% if (bookings.length === 0) { %>
+        <div class="alert alert-info">No taxi bookings yet.</div>
+    <% } %>
+    <div class="row">
+        <% bookings.forEach(b => { %>
+            <div class="col-md-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title"><%= b.listing ? b.listing.title : 'Hotel' %></h5>
+                        <p class="mb-1"><strong>Pickup:</strong> <%= b.pickupLocation %></p>
+                        <p class="mb-1"><strong>Drop:</strong> <%= b.dropLocation %></p>
+                        <p class="mb-1"><strong>Type:</strong> <%= b.taxiType %></p>
+                        <p class="mb-1"><strong>Distance:</strong> <%= b.distanceKm %> km</p>
+                        <p class="mb-1"><strong>ETA:</strong> <%= b.estimatedTimeMin %> mins</p>
+                        <p class="mb-1"><strong>Fare:</strong> ₹<%= b.fareAmount.toLocaleString('en-IN') %></p>
+                        <p class="mb-1"><strong>Payment:</strong> <span class="badge bg-<%= b.paymentStatus === 'Paid' ? 'success' : (b.paymentStatus === 'Pending' ? 'warning' : 'danger') %>"><%= b.paymentStatus %></span></p>
+                        <p class="mb-0"><strong>Status:</strong> <span class="badge bg-secondary"><%= b.bookingStatus %></span></p>
+                    </div>
+                    <div class="card-footer d-flex gap-2">
+                        <% if (b.listing) { %>
+                            <a href="/listings/<%= b.listing._id %>" class="btn btn-sm btn-outline-primary">View Hotel</a>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+        <% }) %>
+    </div>
+</div>
+
+

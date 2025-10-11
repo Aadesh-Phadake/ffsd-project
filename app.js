@@ -22,6 +22,7 @@ const listingRouter = require('./routes/listing');
 const reviewRouter = require('./routes/review');
 const userRouter = require('./routes/user');
 const paymentRouter = require('./routes/payment');
+const taxiRouter = require('./routes/taxi');
 const MongoStore = require('connect-mongo');
 
 const PORT = process.env.PORT || 8080; // Default to 8080 if no environment variable is set
@@ -96,6 +97,7 @@ app.use('/listings', listingRouter);
 app.use('/listings/:id/reviews', reviewRouter);
 app.use('/', userRouter);
 app.use('/payment', paymentRouter);
+app.use('/', taxiRouter);
 
 // Root Route
 app.get('/', (req, res) => {
