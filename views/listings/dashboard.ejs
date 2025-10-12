@@ -27,6 +27,9 @@
                     <button id="hotels-tab" class="tab-button py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
                         My Hotels
                     </button>
+                    <button id="taxi-tab" class="tab-button py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                        Taxi Bookings
+                    </button>
                 </nav>
             </div>
         </div>
@@ -124,6 +127,75 @@
                 </div>
             </div>
         </div>
+
+        <!-- Taxi Bookings Section -->
+        <div id="taxi-section" class="hidden">
+            <div class="mb-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-gray-800">Taxi Bookings</h3>
+                    <div class="text-sm text-gray-600">
+                        <span class="font-medium">Total Revenue:</span> 
+                        <span id="taxi-total-revenue" class="text-green-600 font-bold">₹0</span>
+                    </div>
+                </div>
+            </div>
+            <div id="taxi-container">
+                <% if (taxiBookings && taxiBookings.length > 0) { %>
+                <div class="bg-white shadow rounded-xl overflow-hidden">
+                    <div class="bg-gradient-to-r from-blue-300 to-blue-500 text-white px-6 py-4 text-lg font-semibold">
+                        Taxi Booking Overview
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-sm text-left">
+                            <thead class="bg-blue-100 text-blue-800 uppercase text-xs">
+                                <tr>
+                                    <th class="px-6 py-3">Hotel</th>
+                                    <th class="px-6 py-3">Customer</th>
+                                    <th class="px-6 py-3">Pickup</th>
+                                    <th class="px-6 py-3">Drop</th>
+                                    <th class="px-6 py-3">Type</th>
+                                    <th class="px-6 py-3">Distance</th>
+                                    <th class="px-6 py-3">Fare</th>
+                                    <th class="px-6 py-3">Payment</th>
+                                    <th class="px-6 py-3">Status</th>
+                                    <th class="px-6 py-3">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-blue-100 bg-white">
+                                <% taxiBookings.forEach(booking => { %>
+                                    <tr class="hover:bg-blue-50">
+                                        <td class="px-6 py-4 font-medium"><%= booking.listing.title %></td>
+                                        <td class="px-6 py-4"><%= booking.user.username %> <br><span class="text-xs text-gray-500"><%= booking.user.email %></span></td>
+                                        <td class="px-6 py-4"><%= booking.pickupLocation %></td>
+                                        <td class="px-6 py-4"><%= booking.dropLocation %></td>
+                                        <td class="px-6 py-4"><%= booking.taxiType %></td>
+                                        <td class="px-6 py-4"><%= booking.distanceKm %> km</td>
+                                        <td class="px-6 py-4 text-green-600 font-semibold">₹<%= booking.fareAmount %></td>
+                                        <td class="px-6 py-4">
+                                            <span class="px-2 py-1 text-xs rounded-full <%= booking.paymentStatus === 'Paid' ? 'bg-green-100 text-green-800' : (booking.paymentStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800') %>">
+                                                <%= booking.paymentStatus %>
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <span class="px-2 py-1 text-xs rounded-full <%= booking.bookingStatus === 'Confirmed' ? 'bg-green-100 text-green-800' : (booking.bookingStatus === 'Created' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800') %>">
+                                                <%= booking.bookingStatus %>
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 text-gray-500 text-sm"><%= new Date(booking.createdAt).toLocaleString() %></td>
+                                    </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <% } else { %>
+                <div class="bg-white rounded-xl p-6 shadow text-center text-gray-500">
+                    <h4 class="text-lg font-semibold mb-2">No taxi bookings found</h4>
+                    <p>No taxi bookings have been made for your hotels yet.</p>
+                </div>
+                <% } %>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -133,8 +205,10 @@
             // Tab elements
             const bookingsTab = document.getElementById('bookings-tab');
             const hotelsTab = document.getElementById('hotels-tab');
+            const taxiTab = document.getElementById('taxi-tab');
             const bookingsSection = document.getElementById('bookings-section');
             const hotelsSection = document.getElementById('hotels-section');
+            const taxiSection = document.getElementById('taxi-section');
             
             // Search elements
             const searchForm = document.getElementById('dashboard-search-form');
@@ -156,27 +230,37 @@
             }
 
             // Tab switching functionality
-            function switchTab(activeTab, activeSection, inactiveTab, inactiveSection) {
+            function switchTab(activeTab, activeSection, inactiveTabs, inactiveSections) {
                 // Update tab styles
                 activeTab.classList.add('active', 'border-orange-500', 'text-orange-600');
                 activeTab.classList.remove('border-transparent', 'text-gray-500');
                 
-                inactiveTab.classList.remove('active', 'border-orange-500', 'text-orange-600');
-                inactiveTab.classList.add('border-transparent', 'text-gray-500');
+                // Reset all inactive tabs
+                inactiveTabs.forEach(tab => {
+                    tab.classList.remove('active', 'border-orange-500', 'text-orange-600');
+                    tab.classList.add('border-transparent', 'text-gray-500');
+                });
                 
                 // Show/hide sections
                 activeSection.classList.remove('hidden');
-                inactiveSection.classList.add('hidden');
+                inactiveSections.forEach(section => {
+                    section.classList.add('hidden');
+                });
             }
 
             // Tab event listeners
             bookingsTab.addEventListener('click', function() {
-                switchTab(bookingsTab, bookingsSection, hotelsTab, hotelsSection);
+                switchTab(bookingsTab, bookingsSection, [hotelsTab, taxiTab], [hotelsSection, taxiSection]);
             });
 
             hotelsTab.addEventListener('click', function() {
-                switchTab(hotelsTab, hotelsSection, bookingsTab, bookingsSection);
+                switchTab(hotelsTab, hotelsSection, [bookingsTab, taxiTab], [bookingsSection, taxiSection]);
                 loadHotels(); // Load hotels when tab is clicked
+            });
+
+            taxiTab.addEventListener('click', function() {
+                switchTab(taxiTab, taxiSection, [bookingsTab, hotelsTab], [bookingsSection, hotelsSection]);
+                calculateTaxiRevenue(); // Calculate taxi revenue when tab is clicked
             });
 
             // Function to create hotel card HTML
@@ -401,6 +485,35 @@
                 e.preventDefault();
                 performSearch();
             });
+
+            // Function to calculate taxi revenue
+            function calculateTaxiRevenue() {
+                const taxiRows = document.querySelectorAll('#taxi-container tbody tr');
+                let totalRevenue = 0;
+                
+                taxiRows.forEach(row => {
+                    const fareCell = row.querySelector('td:nth-child(7)'); // Fare column
+                    const paymentCell = row.querySelector('td:nth-child(8)'); // Payment status column
+                    
+                    if (fareCell && paymentCell) {
+                        const fareText = fareCell.textContent.trim();
+                        const paymentStatus = paymentCell.textContent.trim();
+                        
+                        // Only count paid bookings
+                        if (paymentStatus === 'Paid' && fareText.includes('₹')) {
+                            const fare = parseFloat(fareText.replace('₹', '').replace(',', ''));
+                            if (!isNaN(fare)) {
+                                totalRevenue += fare;
+                            }
+                        }
+                    }
+                });
+                
+                const revenueElement = document.getElementById('taxi-total-revenue');
+                if (revenueElement) {
+                    revenueElement.textContent = `₹${totalRevenue.toLocaleString('en-IN')}`;
+                }
+            }
         });
     </script>
 <script src="https://cdn.tailwindcss.com"></script>

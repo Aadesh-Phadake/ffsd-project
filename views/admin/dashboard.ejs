@@ -1,0 +1,142 @@
+<% layout('./layouts/boilerplate') %>
+<body class="bg-gray-50 min-h-screen">
+    <div class="max-w-7xl mx-auto py-12 px-4">
+        <div class="mb-6">
+            <h1 class="text-4xl font-bold text-center mb-10 text-blue-800">Admin Dashboard</h1>
+            <% if (currentUser) { %>
+                <p class="text-center text-gray-600">Welcome, <%= currentUser.username %>!</p>
+            <% } %>
+        </div>
+
+        <!-- Revenue Summary -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-xl p-6 shadow">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-green-100 text-green-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">Total Revenue</p>
+                        <p class="text-2xl font-semibold text-gray-900">₹<%= totalRevenue.toLocaleString('en-IN') %></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl p-6 shadow">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">Total Bookings</p>
+                        <p class="text-2xl font-semibold text-gray-900"><%= taxiBookings.length %></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl p-6 shadow">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">Paid Bookings</p>
+                        <p class="text-2xl font-semibold text-gray-900"><%= taxiBookings.filter(b => b.paymentStatus === 'Paid').length %></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl p-6 shadow">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">Confirmed</p>
+                        <p class="text-2xl font-semibold text-gray-900"><%= taxiBookings.filter(b => b.bookingStatus === 'Confirmed').length %></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Revenue by Taxi Type -->
+        <div class="bg-white rounded-xl p-6 shadow mb-8">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Revenue by Taxi Type</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <% Object.keys(revenueByType).forEach(type => { %>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium text-gray-600"><%= type %></span>
+                            <span class="text-lg font-bold text-green-600">₹<%= revenueByType[type].toLocaleString('en-IN') %></span>
+                        </div>
+                    </div>
+                <% }) %>
+            </div>
+        </div>
+
+        <!-- Taxi Bookings Table -->
+        <div class="bg-white shadow rounded-xl overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-300 to-blue-500 text-white px-6 py-4 text-lg font-semibold">
+                All Taxi Bookings
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm text-left">
+                    <thead class="bg-blue-100 text-blue-800 uppercase text-xs">
+                        <tr>
+                            <th class="px-6 py-3">Hotel</th>
+                            <th class="px-6 py-3">Customer</th>
+                            <th class="px-6 py-3">Pickup</th>
+                            <th class="px-6 py-3">Drop</th>
+                            <th class="px-6 py-3">Type</th>
+                            <th class="px-6 py-3">Distance</th>
+                            <th class="px-6 py-3">Fare</th>
+                            <th class="px-6 py-3">Payment</th>
+                            <th class="px-6 py-3">Status</th>
+                            <th class="px-6 py-3">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-blue-100 bg-white">
+                        <% if (taxiBookings.length > 0) { %>
+                            <% taxiBookings.forEach(booking => { %>
+                                <tr class="hover:bg-blue-50">
+                                    <td class="px-6 py-4 font-medium"><%= booking.listing.title %></td>
+                                    <td class="px-6 py-4"><%= booking.user.username %> <br><span class="text-xs text-gray-500"><%= booking.user.email %></span></td>
+                                    <td class="px-6 py-4"><%= booking.pickupLocation %></td>
+                                    <td class="px-6 py-4"><%= booking.dropLocation %></td>
+                                    <td class="px-6 py-4"><%= booking.taxiType %></td>
+                                    <td class="px-6 py-4"><%= booking.distanceKm %> km</td>
+                                    <td class="px-6 py-4 text-green-600 font-semibold">₹<%= booking.fareAmount %></td>
+                                    <td class="px-6 py-4">
+                                        <span class="px-2 py-1 text-xs rounded-full <%= booking.paymentStatus === 'Paid' ? 'bg-green-100 text-green-800' : (booking.paymentStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800') %>">
+                                            <%= booking.paymentStatus %>
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="px-2 py-1 text-xs rounded-full <%= booking.bookingStatus === 'Confirmed' ? 'bg-green-100 text-green-800' : (booking.bookingStatus === 'Created' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800') %>">
+                                            <%= booking.bookingStatus %>
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-gray-500 text-sm"><%= new Date(booking.createdAt).toLocaleString() %></td>
+                                </tr>
+                            <% }) %>
+                        <% } else { %>
+                            <tr>
+                                <td colspan="10" class="px-6 py-8 text-center text-gray-500">
+                                    No taxi bookings found.
+                                </td>
+                            </tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>

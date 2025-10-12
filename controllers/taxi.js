@@ -113,10 +113,24 @@ module.exports.createOrder = async (req, res) => {
 module.exports.verifyPayment = async (req, res) => {
     try {
         const { bookingId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+        
+        console.log('Taxi payment verification attempt:', { bookingId, razorpay_order_id, razorpay_payment_id });
+        
         const booking = await TaxiBooking.findById(bookingId);
-        if (!booking || booking.razorpayOrderId !== razorpay_order_id) {
-            req.flash('error', 'Invalid booking/payment');
-            return res.redirect('/profile');
+        if (!booking) {
+            console.error('Booking not found:', bookingId);
+            return res.status(404).json({ success: false, message: 'Booking not found' });
+        }
+        
+        if (booking.razorpayOrderId !== razorpay_order_id) {
+            console.error('Order ID mismatch:', { stored: booking.razorpayOrderId, received: razorpay_order_id });
+            return res.status(400).json({ success: false, message: 'Invalid order ID' });
+        }
+
+        // Check if Razorpay key secret is available
+        if (!process.env.RAZORPAY_KEY_SECRET) {
+            console.error('RAZORPAY_KEY_SECRET not found in environment variables');
+            return res.status(500).json({ success: false, message: 'Payment configuration error' });
         }
 
         const sign = `${razorpay_order_id}|${razorpay_payment_id}`;
@@ -125,10 +139,12 @@ module.exports.verifyPayment = async (req, res) => {
             .update(sign)
             .digest('hex');
 
+        console.log('Signature verification:', { expected: expectedSign, received: razorpay_signature });
+
         if (expectedSign !== razorpay_signature) {
             await TaxiBooking.findByIdAndUpdate(bookingId, { paymentStatus: 'Failed' });
-            req.flash('error', 'Payment verification failed');
-            return res.redirect('/profile');
+            console.error('Signature verification failed');
+            return res.status(400).json({ success: false, message: 'Payment verification failed' });
         }
 
         await TaxiBooking.findByIdAndUpdate(bookingId, {
@@ -136,12 +152,12 @@ module.exports.verifyPayment = async (req, res) => {
             bookingStatus: 'Confirmed',
             razorpayPaymentId: razorpay_payment_id,
         });
-        req.flash('success', 'Taxi booked successfully!');
-        return res.redirect('/taxis/bookings');
+        
+        console.log('Taxi payment verified successfully');
+        return res.json({ success: true, message: 'Payment verified successfully' });
     } catch (e) {
         console.error('Verify taxi payment error:', e);
-        req.flash('error', 'Server error');
-        return res.redirect('/profile');
+        return res.status(500).json({ success: false, message: 'Server error during verification' });
     }
 };
 

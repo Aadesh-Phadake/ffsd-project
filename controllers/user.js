@@ -12,7 +12,11 @@ module.exports.signup = async (req, res) => {
     let {username, email, password, role} = req.body;
     
     // Validate role
+<<<<<<< HEAD
+    if (!['traveller', 'manager', 'customer_care'].includes(role)) {
+=======
     if (!['traveller', 'manager'].includes(role)) {
+>>>>>>> 78dfe5904c4dfb796f46166260e05a49cf9b4607
         req.flash('error', 'Please select a valid account type');
         return res.redirect('/signup');
     }
@@ -26,6 +30,11 @@ module.exports.signup = async (req, res) => {
         // Redirect based on role
         if (role === 'manager') {
             res.redirect('/manager/dashboard');
+<<<<<<< HEAD
+        } else if (role === 'customer_care') {
+            res.redirect('/customer-care/dashboard');
+=======
+>>>>>>> 78dfe5904c4dfb796f46166260e05a49cf9b4607
         } else {
             res.redirect('/listings');
         }
@@ -232,8 +241,17 @@ module.exports.ownerDashboard = async (req, res) => {
             .sort({ createdAt: -1 })
             .limit(20); // Show only recent 20 bookings
 
+        // Find taxi bookings for these listings
+        const TaxiBooking = require('../models/taxiBooking');
+        const taxiBookings = await TaxiBooking.find({ listing: { $in: listingIds } })
+            .populate('user', 'username email')
+            .populate('listing', 'title location')
+            .sort({ createdAt: -1 })
+            .limit(20); // Show only recent 20 taxi bookings
+
         res.render('listings/dashboard', {
             bookings,
+            taxiBookings,
             currentUser: req.user
         });
     } catch (error) {
@@ -324,6 +342,47 @@ module.exports.getUserHotels = async (req, res) => {
     } catch (error) {
         console.error('Error fetching user hotels:', error);
         res.status(500).json({ success: false, error: 'Server error' });
+    }
+};
+
+// Admin dashboard with taxi fare details
+module.exports.adminDashboard = async (req, res) => {
+    try {
+        const TaxiBooking = require('../models/taxiBooking');
+        
+        // Get all taxi bookings with user and listing details
+        const taxiBookings = await TaxiBooking.find({})
+            .populate('user', 'username email')
+            .populate('listing', 'title location owner')
+            .sort({ createdAt: -1 })
+            .limit(50); // Show recent 50 bookings
+
+        // Calculate total revenue
+        const totalRevenue = taxiBookings
+            .filter(booking => booking.paymentStatus === 'Paid')
+            .reduce((sum, booking) => sum + booking.fareAmount, 0);
+
+        // Calculate revenue by taxi type
+        const revenueByType = taxiBookings
+            .filter(booking => booking.paymentStatus === 'Paid')
+            .reduce((acc, booking) => {
+                if (!acc[booking.taxiType]) {
+                    acc[booking.taxiType] = 0;
+                }
+                acc[booking.taxiType] += booking.fareAmount;
+                return acc;
+            }, {});
+
+        res.render('admin/dashboard', {
+            taxiBookings,
+            totalRevenue,
+            revenueByType,
+            currentUser: req.user
+        });
+    } catch (error) {
+        console.error('Admin dashboard error:', error);
+        req.flash('error', 'Error loading admin dashboard');
+        res.redirect('/listings');
     }
 };
 
@@ -512,8 +571,8 @@ module.exports.getCancellationDetails = async (req, res) => {
             cancellationFee = Math.round(booking.totalAmount * 0.1); // 10% fee
         }
 
-        res.json({
-            success: true,
+        res.json({ 
+            success: true, 
             booking: {
                 _id: booking._id,
                 checkIn: booking.checkIn,
@@ -643,5 +702,23 @@ module.exports.activateMembershipAjax = async (req, res) => {
         });
     } catch (error) {
         res.json({ success: false, error: 'Could not activate membership' });
+    }
+};
+
+// Customer care dashboard
+module.exports.customerCareDashboard = async (req, res) => {
+    try {
+        if (req.user.role !== 'customer_care') {
+            req.flash('error', 'Access denied');
+            return res.redirect('/listings');
+        }
+        
+        res.render('customer-care/dashboard', { 
+            currentUser: req.user 
+        });
+    } catch (error) {
+        console.error('Customer care dashboard error:', error);
+        req.flash('error', 'Error loading dashboard');
+        res.redirect('/listings');
     }
 };
