@@ -1,36 +1,137 @@
 <% layout('./layouts/boilerplate') %>
 <div class="row mt-3">
     <div class="col-6 offset-3">
-        <form action="/signup" method="post" class="needs-validation" novalidate>
+        <form action="/signup" method="post" id="signupForm">
             <h1>Sign Up on TravelNest</h1>
             <div class="mb-3">
-                <label for="name" class="form-label">Enter UserName</label>
-                <input type="text" name="username" class="form-control" required>
-                <div class="invalid-feedback">Please enter a valid UserName</div>
+                <label for="username" class="form-label">Enter UserName</label>
+                <input type="text" name="username" id="username" class="form-control">
+                <div class="error-message" id="usernameError" style="color: red; font-size: 0.875rem; margin-top: 0.25rem; display: none;"></div>
             </div>
             <div class="mb-3">
                 <label for="email" class="form-label">Enter Email</label>
-                <input type="email" name="email" class="form-control"  required pattern="[a-zA-Z0-9._%+-]+@gmail\.com" >
-                <div class="invalid-feedback">Please enter a valid email</div>
+                <input type="text" name="email" id="email" class="form-control">
+                <div class="error-message" id="emailError" style="color: red; font-size: 0.875rem; margin-top: 0.25rem; display: none;"></div>
             </div>
             <div class="mb-3">
                 <label for="password" class="form-label">Enter Password</label>
-                <input type="password" name="password" class="form-control" required>
-                <div class="invalid-feedback">Please enter a valid password</div>
+                <input type="password" name="password" id="password" class="form-control">
+                <div class="error-message" id="passwordError" style="color: red; font-size: 0.875rem; margin-top: 0.25rem; display: none;"></div>
             </div>
             <div class="mb-3">
                 <label for="role" class="form-label">Account Type</label>
-                <select name="role" class="form-control" required>
+                <select name="role" id="role" class="form-control">
                     <option value="">Select Account Type</option>
                     <option value="traveller">Traveller - Book and explore hotels</option>
                     <option value="manager">Hotel Manager - List and manage properties</option>
                 </select>
-                <div class="invalid-feedback">Please select an account type</div>
+                <div class="error-message" id="roleError" style="color: red; font-size: 0.875rem; margin-top: 0.25rem; display: none;"></div>
                 <small class="form-text text-muted">
                     <strong>Traveller:</strong> Browse and book hotels<br>
                     <strong>Hotel Manager:</strong> List properties and manage bookings
                 </small>
             </div>
             <button type="submit" class="btn add-btn">Sign Up</button>
+        </form>
     </div>
 </div>
+
+<script>
+// Regex patterns for validation
+const patterns = {
+    username: /^[a-zA-Z0-9_]{3,20}$/, // 3-20 chars, alphanumeric + underscore
+    email: /^[a-zA-Z0-9._%+-]+@gmail\.com$/, // Gmail only
+    password: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{6,}$/, // Min 6 chars, 1 upper, 1 lower, 1 number
+    role: /^(traveller|manager)$/ // Only allowed roles
+};
+
+// Error messages
+const errorMessages = {
+    username: 'Username must be 3-20 characters (letters, numbers, underscore only)',
+    email: 'Please enter a valid Gmail address',
+    password: 'Password must have 6+ chars with 1 uppercase, 1 lowercase, 1 number',
+    role: 'Please select a valid account type'
+};
+
+document.getElementById('signupForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Clear previous errors
+    clearErrors();
+    
+    let isValid = true;
+    
+    // Get form values
+    const formData = {
+        username: document.getElementById('username').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        password: document.getElementById('password').value,
+        role: document.getElementById('role').value
+    };
+    
+    // Validate each field using regex
+    Object.keys(formData).forEach(field => {
+        if (!validateField(field, formData[field])) {
+            isValid = false;
+        }
+    });
+    
+    // If all validations pass, submit the form
+    if (isValid) {
+        this.submit();
+    }
+});
+
+function validateField(fieldName, value) {
+    const pattern = patterns[fieldName];
+    const errorElementId = fieldName + 'Error';
+    
+    if (!pattern.test(value)) {
+        showError(errorElementId, errorMessages[fieldName]);
+        return false;
+    }
+    
+    return true;
+}
+
+function showError(elementId, message) {
+    const errorElement = document.getElementById(elementId);
+    const inputElement = errorElement.previousElementSibling;
+    
+    errorElement.textContent = message;
+    errorElement.style.display = 'block';
+    inputElement.style.borderColor = '#dc3545';
+    inputElement.classList.add('is-invalid');
+}
+
+function clearErrors() {
+    const errorElements = document.querySelectorAll('.error-message');
+    const inputElements = document.querySelectorAll('.form-control');
+    
+    errorElements.forEach(element => {
+        element.style.display = 'none';
+        element.textContent = '';
+    });
+    
+    inputElements.forEach(element => {
+        element.classList.remove('is-invalid');
+        element.style.borderColor = '';
+    });
+}
+
+// Real-time validation on input
+['username', 'email', 'password', 'role'].forEach(fieldName => {
+    const element = document.getElementById(fieldName);
+    const eventType = fieldName === 'role' ? 'change' : 'input';
+    
+    element.addEventListener(eventType, function() {
+        const value = fieldName === 'role' ? this.value : this.value.trim();
+        
+        if (patterns[fieldName].test(value)) {
+            document.getElementById(fieldName + 'Error').style.display = 'none';
+            this.style.borderColor = '#28a745'; // Green border for valid
+            this.classList.remove('is-invalid');
+        }
+    });
+});
+</script>

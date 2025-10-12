@@ -191,19 +191,7 @@
                 performSearch();
             });
 
-            // Real-time search on input (with debouncing)
-            searchInput.addEventListener('input', function() {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    if (searchInput.value.trim().length >= 2 || searchInput.value.trim().length === 0) {
-                        performSearch();
-                    }
-                }, 500); // Wait 500ms after user stops typing
-            });
-
-            // Filter change handlers
-            priceFilter.addEventListener('change', performSearch);
-            ratingFilter.addEventListener('change', performSearch);
+            // Removed automatic search - search only happens on button click or form submit
         });
     </script>
 </body>

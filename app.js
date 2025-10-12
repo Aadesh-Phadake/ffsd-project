@@ -109,6 +109,18 @@ app.use('/manager', managerRouter);
 // Root
 app.get('/', (req, res) => res.redirect('/listings'));
 
+// Static Pages Routes
+app.get('/about', (req, res) => res.render('static/about'));
+app.get('/contact', (req, res) => res.render('static/contact'));
+app.get('/help', (req, res) => res.render('static/help'));
+app.get('/faq', (req, res) => res.render('static/faq'));
+app.get('/booking-help', (req, res) => res.render('static/booking-help'));
+app.get('/customer-service', (req, res) => res.render('static/customer-service'));
+app.get('/privacy', (req, res) => res.render('static/privacy'));
+app.get('/terms', (req, res) => res.render('static/terms'));
+app.get('/cookies', (req, res) => res.render('static/cookies'));
+app.get('/disclaimer', (req, res) => res.render('static/disclaimer'));
+
 // Import role-based middleware
 const { requireTraveller, requireAdmin } = require('./middleware');
 

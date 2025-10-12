@@ -1,0 +1,112 @@
+<% layout('./layouts/boilerplate') %>
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <h1 class="mb-4">Frequently Asked Questions</h1>
+            
+            <div class="accordion" id="faqAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading1">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse1">
+                            How do I make a booking on TravelNest?
+                        </button>
+                    </h2>
+                    <div id="collapse1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            To make a booking, simply browse our listings, select your desired accommodation, choose your dates and number of guests, then click "Book Now". You'll need to create an account and provide payment details to complete your reservation.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading2">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse2">
+                            What is the cancellation policy?
+                        </button>
+                    </h2>
+                    <div id="collapse2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Cancellation policies vary by property. Most bookings can be cancelled up to 24-48 hours before check-in. Premium members enjoy free cancellations. Please check the specific property's policy before booking.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading3">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse3">
+                            How do I become a hotel manager on TravelNest?
+                        </button>
+                    </h2>
+                    <div id="collapse3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            During signup, select "Hotel Manager" as your account type. Once verified, you'll be able to list your properties, manage bookings, and access our manager dashboard to track your performance.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading4">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse4">
+                            What payment methods do you accept?
+                        </button>
+                    </h2>
+                    <div id="collapse4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            We accept all major credit cards, debit cards, and digital payment methods through our secure payment partner Razorpay. All transactions are encrypted and secure.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading5">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse5">
+                            How do I contact the hotel directly?
+                        </button>
+                    </h2>
+                    <div id="collapse5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            After booking confirmation, you'll receive the hotel's contact information in your confirmation email. You can also find contact details on the property's listing page.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading6">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse6">
+                            What if I need to modify my booking?
+                        </button>
+                    </h2>
+                    <div id="collapse6" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Booking modifications depend on the property's policy and availability. Contact our customer service team for assistance with date changes, guest count adjustments, or special requests.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading7">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse7">
+                            Is my personal information safe?
+                        </button>
+                    </h2>
+                    <div id="collapse7" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Yes, we take data security seriously. All personal information is encrypted and stored securely. We never share your data with third parties without your consent. Please review our Privacy Policy for detailed information.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-5 bg-light">
+                <div class="card-body text-center">
+                    <h4>Still have questions?</h4>
+                    <p class="text-muted mb-3">Can't find what you're looking for? Our support team is here to help.</p>
+                    <div class="d-flex justify-content-center gap-2">
+                        <a href="/contact" class="btn btn-primary">Contact Support</a>
+                        <a href="/customer-service" class="btn btn-outline-primary">Customer Service</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

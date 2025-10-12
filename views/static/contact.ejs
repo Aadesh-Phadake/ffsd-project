@@ -1,0 +1,88 @@
+<% layout('./layouts/boilerplate') %>
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <h1 class="mb-4">Contact Us</h1>
+            
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body">
+                            <h3 class="text-primary mb-3">Get in Touch</h3>
+                            <div class="contact-info">
+                                <p class="mb-3">
+                                    <i class="fas fa-envelope text-primary me-3"></i>
+                                    <strong>Email:</strong> support@travelnest.com
+                                </p>
+                                <p class="mb-3">
+                                    <i class="fas fa-phone text-primary me-3"></i>
+                                    <strong>Phone:</strong> +1 (555) 123-4567
+                                </p>
+                                <p class="mb-3">
+                                    <i class="fas fa-map-marker-alt text-primary me-3"></i>
+                                    <strong>Address:</strong><br>
+                                    TravelNest Headquarters<br>
+                                    123 Tourism Avenue<br>
+                                    Travel City, TC 12345
+                                </p>
+                                <p class="mb-0">
+                                    <i class="fas fa-clock text-primary me-3"></i>
+                                    <strong>Hours:</strong> 24/7 Support Available
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body">
+                            <h3 class="text-primary mb-3">Quick Support</h3>
+                            <div class="d-grid gap-2">
+                                <a href="/help" class="btn btn-outline-primary">
+                                    <i class="fas fa-question-circle me-2"></i>Help Center
+                                </a>
+                                <a href="/faq" class="btn btn-outline-primary">
+                                    <i class="fas fa-list-alt me-2"></i>Frequently Asked Questions
+                                </a>
+                                <a href="/booking-help" class="btn btn-outline-primary">
+                                    <i class="fas fa-book me-2"></i>Booking Help
+                                </a>
+                                <a href="/customer-service" class="btn btn-outline-primary">
+                                    <i class="fas fa-headset me-2"></i>Customer Service
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h3 class="text-primary mb-3">Send us a Message</h3>
+                    <form>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label">Name</label>
+                                <input type="text" class="form-control" id="name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="subject" class="form-label">Subject</label>
+                            <input type="text" class="form-control" id="subject" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="message" class="form-label">Message</label>
+                            <textarea class="form-control" id="message" rows="5" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Send Message</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
