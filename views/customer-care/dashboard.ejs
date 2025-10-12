@@ -1,0 +1,66 @@
+<% layout('./layouts/boilerplate') %>
+
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="jumbotron bg-primary text-white rounded p-4 mb-4">
+                <h1 class="display-4">
+                    <i class="fas fa-headset"></i> Customer Care Dashboard
+                </h1>
+                <p class="lead">Welcome to your customer care dashboard. Help travelers with their booking queries and provide excellent support.</p>
+                <hr class="my-4" style="border-color: rgba(255,255,255,0.3);">
+                <a class="btn btn-light btn-lg" href="/chats" role="button">
+                    <i class="fas fa-comments"></i> View All Chats
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-comments"></i> Recent Chats</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Access your recent customer conversations and provide support.</p>
+                    <a href="/chats" class="btn btn-primary">
+                        <i class="fas fa-comments"></i> View Chats
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-question-circle"></i> Support Guidelines</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success"></i> Be polite and professional</li>
+                        <li><i class="fas fa-check text-success"></i> Respond promptly to customer queries</li>
+                        <li><i class="fas fa-check text-success"></i> Help with booking modifications</li>
+                        <li><i class="fas fa-check text-success"></i> Provide information about hotels and services</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.jumbotron {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    transition: box-shadow 0.15s ease-in-out;
+}
+</style>

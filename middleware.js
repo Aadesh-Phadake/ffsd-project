@@ -20,8 +20,7 @@ module.exports.saveRedirectUrl = (req, res, next) => {
 module.exports.isOwner = async (req, res, next) => {
     const {id} = req.params;
     const listing = await Listing.findById(id);
-    if
-    (!listing.owner.equals(res.locals.currentUser._id)){
+    if (!listing.owner.equals(res.locals.currentUser._id)){
         req.flash('error', 'You do not have permission to do that!');
         return res.redirect(`/listings/${id}`);
     }
@@ -31,10 +30,11 @@ module.exports.isOwner = async (req, res, next) => {
 module.exports.isOwnerOrAdmin = async (req, res, next) => {
     const { id } = req.params;
     const listing = await Listing.findById(id);
-
+    
+    // Check if user is the owner of the listing or has admin role
     if (
-        !listing.owner.equals(req.user._id) &&
-        req.user.username !== "TravelNest"
+        !listing.owner.equals(res.locals.currentUser._id) &&
+        res.locals.currentUser.role !== 'admin'
     ) {
         req.flash("error", "You do not have permission to do that!");
         return res.redirect(`/listings/${id}`);
@@ -75,3 +75,26 @@ module.exports.isAuthor = async (req, res, next) => {
     }
     next();
 }
+
+// Role-based middleware
+module.exports.requireRole = (allowedRoles) => {
+    return (req, res, next) => {
+        if (!req.user) {
+            req.flash('error', 'You must be logged in');
+            return res.redirect('/login');
+        }
+        
+        if (!allowedRoles.includes(req.user.role)) {
+            req.flash('error', 'Access denied. Insufficient permissions.');
+            return res.redirect('/');
+        }
+        
+        next();
+    };
+};
+
+module.exports.requireTraveller = module.exports.requireRole(['traveller']);
+module.exports.requireManager = module.exports.requireRole(['manager']);
+module.exports.requireAdmin = module.exports.requireRole(['admin']);
+module.exports.requireManagerOrAdmin = module.exports.requireRole(['manager', 'admin']);
+module.exports.requireTravellerOrManager = module.exports.requireRole(['traveller', 'manager']);

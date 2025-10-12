@@ -9,13 +9,28 @@ module.exports.renderSignup = (req, res) => {
 
 module.exports.signup = async (req, res) => {
     try{
-    let {username, email, password} = req.body;
-    let user = new User({username, email});
+    let {username, email, password, role} = req.body;
+    
+    // Validate role
+    if (!['traveller', 'manager', 'customer_care'].includes(role)) {
+        req.flash('error', 'Please select a valid account type');
+        return res.redirect('/signup');
+    }
+    
+    let user = new User({username, email, role});
     let registeredUser = await User.register(user, password);
     req.login(registeredUser, err => {
         if(err) return next(err);
-        req.flash('success', 'Welcome to TravelNest!');
-        res.redirect('/listings');
+        req.flash('success', `Welcome to TravelNest! Your ${role} account has been created.`);
+        
+        // Redirect based on role
+        if (role === 'manager') {
+            res.redirect('/manager/dashboard');
+        } else if (role === 'customer_care') {
+            res.redirect('/customer-care/dashboard');
+        } else {
+            res.redirect('/listings');
+        }
     });
     
     } catch(e){
@@ -86,11 +101,26 @@ module.exports.createBooking = async (req, res) => {
     
     // Parse the dates
     const parseDate = (dateStr) => {
-        const parts = dateStr.split('-');
-        if (parts.length !== 3) return null;
-        const [day, month, year] = parts;
-        // Month is 0-based in JavaScript Date
-        return new Date(year, month - 1, day);
+        if (!dateStr) return null;
+        
+        // Handle DD-MM-YYYY format (like '14-10-2025')
+        if (dateStr.includes('-') && dateStr.split('-').length === 3) {
+            const parts = dateStr.split('-');
+            if (parts[0].length <= 2) {
+                // DD-MM-YYYY format
+                const [day, month, year] = parts.map(Number);
+                const date = new Date(year, month - 1, day); // month is 0-indexed
+                return isNaN(date.getTime()) ? null : date;
+            } else {
+                // YYYY-MM-DD format
+                const date = new Date(dateStr);
+                return isNaN(date.getTime()) ? null : date;
+            }
+        }
+        
+        // Fallback: try standard Date parsing
+        const date = new Date(dateStr);
+        return isNaN(date.getTime()) ? null : date;
     };
 
     const checkInDate = parseDate(checkIn);
@@ -101,12 +131,23 @@ module.exports.createBooking = async (req, res) => {
     let totalAmount = 0;
 
     // Calculate values if dates are valid, otherwise use 0
+    const numGuests = parseInt(guests) || 1;
     if (checkInDate && checkOutDate && !isNaN(checkInDate.getTime()) && !isNaN(checkOutDate.getTime())) {
         nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
         if (nights > 0) {
+            // Calculate base amount: price per night * nights (for up to 2 guests)
+            let baseAmount = listing.price * nights;
+            
+            // Add ₹500 per night for each guest beyond 2
+            if (numGuests > 2) {
+                const additionalGuestFee = (numGuests - 2) * 500 * nights;
+                baseAmount += additionalGuestFee;
+            }
+            
+            // Check if user has active membership for service fee discount
             const isActiveMember = req.user && req.user.isMember && req.user.membershipExpiresAt && new Date(req.user.membershipExpiresAt) > new Date();
-            serviceFee = isActiveMember ? 0 : Math.round(listing.price * nights * 0.1);
-            totalAmount = (listing.price * nights) + serviceFee;
+            serviceFee = isActiveMember ? 0 : Math.round(baseAmount * 0.1); // 10% service fee or free for members
+            totalAmount = baseAmount + serviceFee;
         }
     }
 
@@ -654,5 +695,23 @@ module.exports.activateMembershipAjax = async (req, res) => {
         });
     } catch (error) {
         res.json({ success: false, error: 'Could not activate membership' });
+    }
+};
+
+// Customer care dashboard
+module.exports.customerCareDashboard = async (req, res) => {
+    try {
+        if (req.user.role !== 'customer_care') {
+            req.flash('error', 'Access denied');
+            return res.redirect('/listings');
+        }
+        
+        res.render('customer-care/dashboard', { 
+            currentUser: req.user 
+        });
+    } catch (error) {
+        console.error('Customer care dashboard error:', error);
+        req.flash('error', 'Error loading dashboard');
+        res.redirect('/listings');
     }
 };

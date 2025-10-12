@@ -87,8 +87,33 @@ module.exports.new = async (req, res) => {
 
 module.exports.show = async (req, res) => {
     try {
+        const { sortBy } = req.query;
+        let sortOption = {};
+        
+        // Define sort options for reviews
+        switch (sortBy) {
+            case 'newest':
+                sortOption = { createdAt: -1 }; // newest first
+                break;
+            case 'oldest':
+                sortOption = { createdAt: 1 }; // oldest first
+                break;
+            case 'highest':
+                sortOption = { rating: -1 }; // highest rating first
+                break;
+            case 'lowest':
+                sortOption = { rating: 1 }; // lowest rating first
+                break;
+            default:
+                sortOption = { createdAt: -1 }; // default to newest first
+        }
+        
         const listing = await Listing.findById(req.params.id)
-            .populate({ path: 'reviews', populate: { path: 'author' } })
+            .populate({ 
+                path: 'reviews', 
+                populate: { path: 'author' },
+                options: { sort: sortOption }
+            })
             .populate('owner');
 
         if (!listing) {
@@ -121,7 +146,7 @@ module.exports.show = async (req, res) => {
         }
 
         // Show page without offers/discounts
-        res.render('listings/show.ejs', { listing, offer: null, finalPrice: listing.price });
+        res.render('listings/show.ejs', { listing, offer: null, finalPrice: listing.price, sortBy: sortBy || 'newest' });
 
     } catch (error) {
         console.error(error);
@@ -173,10 +198,26 @@ module.exports.renderPayment = async (req, res) => {
     }
 
     const parseDate = (dateStr) => {
-        const parts = dateStr.split('-');
-        if (parts.length !== 3) return null;
-        const [day, month, year] = parts;
-        return new Date(year, month - 1, day);
+        if (!dateStr) return null;
+        
+        // Handle DD-MM-YYYY format (like '14-10-2025')
+        if (dateStr.includes('-') && dateStr.split('-').length === 3) {
+            const parts = dateStr.split('-');
+            if (parts[0].length <= 2) {
+                // DD-MM-YYYY format
+                const [day, month, year] = parts.map(Number);
+                const date = new Date(year, month - 1, day); // month is 0-indexed
+                return isNaN(date.getTime()) ? null : date;
+            } else {
+                // YYYY-MM-DD format
+                const date = new Date(dateStr);
+                return isNaN(date.getTime()) ? null : date;
+            }
+        }
+        
+        // Fallback: try standard Date parsing
+        const date = new Date(dateStr);
+        return isNaN(date.getTime()) ? null : date;
     };
 
     const checkInDate = parseDate(checkIn);
@@ -186,12 +227,24 @@ module.exports.renderPayment = async (req, res) => {
     let serviceFee = 0;
     let totalAmount = 0;
 
+    const numGuests = parseInt(guests) || 1;
     if (checkInDate && checkOutDate && !isNaN(checkInDate.getTime()) && !isNaN(checkOutDate.getTime())) {
         nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
         if (nights > 0) {
+            // Calculate base amount: price per night * nights (for up to 2 guests)
+            let baseAmount = listing.price * nights;
+            
+            // Add ₹500 per night for each guest beyond 2
+            let additionalGuestFee = 0;
+            if (numGuests > 2) {
+                additionalGuestFee = (numGuests - 2) * 500 * nights;
+                baseAmount += additionalGuestFee;
+            }
+            
+            // Check if user has active membership for service fee discount
             const isActiveMember = req.user && req.user.isMember && req.user.membershipExpiresAt && new Date(req.user.membershipExpiresAt) > new Date();
-            serviceFee = isActiveMember ? 0 : Math.round(listing.price * nights * 0.1);
-            totalAmount = (listing.price * nights) + serviceFee;
+            serviceFee = isActiveMember ? 0 : Math.round(baseAmount * 0.1); // 10% service fee or free for members
+            totalAmount = baseAmount + serviceFee;
         }
     }
 

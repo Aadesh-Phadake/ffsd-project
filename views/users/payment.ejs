@@ -17,41 +17,108 @@
                 </div>
             </div>
 
+            <% 
+                // Define helper functions first
+                const parseDate = (dateStr) => {
+                    if (!dateStr) return null;
+                    
+                    // Handle DD-MM-YYYY format (like '13-10-2025')
+                    if (dateStr.includes('-') && dateStr.split('-').length === 3) {
+                        const parts = dateStr.split('-');
+                        if (parts[0].length <= 2) {
+                            // DD-MM-YYYY format
+                            const [day, month, year] = parts.map(Number);
+                            const date = new Date(year, month - 1, day); // month is 0-indexed
+                            return isNaN(date.getTime()) ? null : date;
+                        } else {
+                            // YYYY-MM-DD format
+                            const date = new Date(dateStr);
+                            return isNaN(date.getTime()) ? null : date;
+                        }
+                    }
+                    
+                    // Fallback: try standard Date parsing
+                    const date = new Date(dateStr);
+                    return isNaN(date.getTime()) ? null : date;
+                };
+                
+                const formatDate = (dateStr) => {
+                    const date = parseDate(dateStr);
+                    if (!date) return 'Invalid Date';
+                    return date.toLocaleDateString('en-IN', { 
+                        day: '2-digit', 
+                        month: 'short', 
+                        year: 'numeric' 
+                    });
+                };
+                
+                // Calculate nights from check-in and check-out dates
+                const checkInDate = parseDate(checkIn);
+                const checkOutDate = parseDate(checkOut);
+                const nights = checkInDate && checkOutDate ? Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24)) : 1;
+                const numGuests = parseInt(guests) || 1;
+                
+                // Calculate amounts with new pricing logic
+                let baseAmount = property.price * nights;  // Base price for up to 2 guests
+                let additionalGuestFee = 0;
+                
+                if (numGuests > 2) {
+                    additionalGuestFee = (numGuests - 2) * 500 * nights;
+                    baseAmount += additionalGuestFee;
+                }
+                
+                // Check if user has active membership for admin fee waiver
+                const hasActiveMembership = isMember && typeof isMember !== 'undefined';
+                const adminFee = hasActiveMembership ? 0 : Math.round(baseAmount * 0.05);
+                const totalAmount = baseAmount + adminFee;
+            %>
+            
             <div class="booking-info">
                 <div class="info-row">
                     <div class="info-label">Check-in</div>
-                    <div class="info-value"><%= checkIn %></div>
+                    <div class="info-value"><%= formatDate(checkIn) %></div>
                 </div>
                 <div class="info-row">
                     <div class="info-label">Check-out</div>
-                    <div class="info-value"><%= checkOut %></div>
+                    <div class="info-value"><%= formatDate(checkOut) %></div>
                 </div>
                 <div class="info-row">
                     <div class="info-label">Guests</div>
                     <div class="info-value"><%= guests %> person(s)</div>
                 </div>
             </div>
-
+            
             <div class="price-summary price-breakdown-box">
                 <div class="breakdown-title">Price Breakdown</div>
                 <div class="price-row">
-                    <div class="price-label">Base Price</div>
-                    <div class="price-value">₹<%= property.price.toLocaleString("en-IN") %></div>
+                    <div class="price-label">₹<%= property.price.toLocaleString("en-IN") %> × <%= nights %> nights</div>
+                    <div class="price-value">₹<%= (property.price * nights).toLocaleString("en-IN") %></div>
                 </div>
-                <% if (!isMember) { %>
+                <% if (numGuests > 2) { %>
                 <div class="price-row">
-                    <div class="price-label">Admin Fee (5%)</div>
-                    <div class="price-value">₹<%= (property.price * 0.05).toLocaleString("en-IN") %></div>
-                </div>
-                <% } else { %>
-                <div class="price-row">
-                    <div class="price-label">Admin Fee</div>
-                    <div class="price-value text-success">₹0 (Membership)</div>
+                    <div class="price-label">Extra guests (<%= (numGuests - 2) %>) × ₹500 × <%= nights %> nights</div>
+                    <div class="price-value">₹<%= additionalGuestFee.toLocaleString("en-IN") %></div>
                 </div>
                 <% } %>
+                <div class="price-row <% if (hasActiveMembership) { %>member-discount<% } %>">
+                    <div class="price-label">
+                        Admin Fee (5%)
+                        <% if (hasActiveMembership) { %>
+                            <span class="discount-badge">MEMBER DISCOUNT</span>
+                        <% } %>
+                    </div>
+                    <div class="price-value">
+                        <% if (hasActiveMembership) { %>
+                            <span class="original-price">₹<%= Math.round(baseAmount * 0.05).toLocaleString("en-IN") %></span>
+                            <span class="discounted-price">₹0</span>
+                        <% } else { %>
+                            ₹<%= adminFee.toLocaleString("en-IN") %>
+                        <% } %>
+                    </div>
+                </div>
                 <div class="price-row total highlighted-total">
                     <div class="price-label">Total Amount</div>
-                    <div class="price-value">₹<%= (isMember ? property.price : property.price * 1.05).toLocaleString("en-IN") %></div>
+                    <div class="price-value">₹<%= totalAmount.toLocaleString("en-IN") %></div>
                 </div>
             </div>
         </div>
@@ -98,7 +165,7 @@
 
                 <button type="button" id="pay-button" class="pay-button">
                     <span class="button-text">Pay Now</span>
-                    <span class="button-amount">₹<%= (isMember ? property.price : property.price * 1.05).toLocaleString("en-IN") %></span>
+                    <span class="button-amount">₹<%= totalAmount.toLocaleString("en-IN") %></span>
                 </button>
             </form>
         </div>
@@ -338,6 +405,38 @@
         padding: 10px 0;
         box-shadow: 0 1px 4px rgba(33,150,243,0.07);
     }
+    
+    .member-discount {
+        background: #e8f5e8;
+        border-left: 4px solid #4caf50;
+        padding: 8px 12px;
+        border-radius: 6px;
+        margin: 8px 0;
+    }
+    
+    .discount-badge {
+        background: #4caf50;
+        color: white;
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin-left: 8px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+    
+    .original-price {
+        text-decoration: line-through;
+        color: #999;
+        font-size: 14px;
+        margin-right: 8px;
+    }
+    
+    .discounted-price {
+        color: #4caf50;
+        font-weight: 600;
+        font-size: 16px;
+    }
 </style>
 
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
@@ -345,7 +444,7 @@
 <script>
     const options = {
         key: "<%= process.env.RAZORPAY_KEY_ID %>",
-        amount: "<%= ((isMember ? property.price : property.price * 1.05) * 100).toFixed(0) %>", // membership aware
+        amount: "<%= (totalAmount * 100).toFixed(0) %>", // Total amount including admin fee
         currency: "INR",
         name: "Property Booking",
         description: "Payment for <%= property.title %>",

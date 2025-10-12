@@ -1,0 +1,313 @@
+<% layout('./layouts/boilerplate') %>
+
+<link rel="stylesheet" href="/css/chat.css">
+
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-comments"></i> 
+                        <% if(currentUser.role === 'traveller') { %>
+                            Customer Support Chat
+                        <% } else { %>
+                            Chat with <%= chat.participants.find(p => p._id.toString() !== currentUser._id.toString()).username %>
+                        <% } %>
+                    </h5>
+                    <div>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="refreshChat()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <a href="<%= currentUser.role === 'customer_care' ? '/customer-care/chats' : '/listings' %>" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="card-body p-0">
+                    <!-- Chat Messages Area -->
+                    <div id="chatMessages" class="chat-messages" style="height: 400px; overflow-y: auto; padding: 15px;">
+                        <div id="messagesContainer">
+                            <!-- Messages will be loaded here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Typing Indicator -->
+                    <div id="typingIndicator" class="typing-indicator" style="display: none; padding: 10px 15px; background-color: #f8f9fa; border-top: 1px solid #dee2e6;">
+                        <small class="text-muted">
+                            <i class="fas fa-circle fa-xs"></i>
+                            <i class="fas fa-circle fa-xs"></i>
+                            <i class="fas fa-circle fa-xs"></i>
+                            <span id="typingUser">Someone</span> is typing...
+                        </small>
+                    </div>
+                    
+                    <!-- Message Input Area -->
+                    <div class="message-input" style="padding: 15px; border-top: 1px solid #dee2e6; background-color: #f8f9fa;">
+                        <form id="messageForm" class="d-flex">
+                            <input type="hidden" id="chatId" value="<%= chat._id %>">
+                            <input type="text" id="messageInput" class="form-control me-2" placeholder="Type your message..." required>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i> Send
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.chat-messages {
+    background-color: #f8f9fa;
+}
+
+.message {
+    margin-bottom: 15px;
+    display: flex;
+    align-items: flex-start;
+}
+
+.message.sent {
+    justify-content: flex-end;
+}
+
+.message.received {
+    justify-content: flex-start;
+}
+
+.message-content {
+    max-width: 70%;
+    padding: 10px 15px;
+    border-radius: 18px;
+    position: relative;
+}
+
+.message.sent .message-content {
+    background-color: #007bff;
+    color: white;
+    border-bottom-right-radius: 5px;
+}
+
+.message.received .message-content {
+    background-color: white;
+    color: #333;
+    border: 1px solid #dee2e6;
+    border-bottom-left-radius: 5px;
+}
+
+.message-info {
+    font-size: 0.75rem;
+    margin-top: 5px;
+    opacity: 0.7;
+}
+
+.message.sent .message-info {
+    text-align: right;
+    color: #6c757d;
+}
+
+.message.received .message-info {
+    text-align: left;
+    color: #6c757d;
+}
+
+.typing-indicator {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.message-input input:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    border-color: #007bff;
+}
+
+/* Scrollbar styling */
+.chat-messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+</style>
+
+<script>
+let chatId = document.getElementById('chatId').value;
+let currentUser = '<%= currentUser._id %>';
+let isTyping = false;
+let typingTimer;
+let messageRefreshInterval;
+
+// Load messages on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadMessages();
+    
+    // Auto-refresh messages every 3 seconds
+    messageRefreshInterval = setInterval(loadMessages, 3000);
+    
+    // Mark messages as read
+    markAsRead();
+});
+
+// Load messages
+async function loadMessages() {
+    try {
+        const response = await fetch(`/chats/${chatId}/messages`);
+        const data = await response.json();
+        
+        if (data.success) {
+            displayMessages(data.chat.messages);
+        }
+    } catch (error) {
+        console.error('Error loading messages:', error);
+    }
+}
+
+// Display messages
+function displayMessages(messages) {
+    const container = document.getElementById('messagesContainer');
+    container.innerHTML = '';
+    
+    messages.forEach(message => {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${message.sender._id === currentUser ? 'sent' : 'received'}`;
+        
+        const messageContent = document.createElement('div');
+        messageContent.className = 'message-content';
+        messageContent.textContent = message.message;
+        
+        const messageInfo = document.createElement('div');
+        messageInfo.className = 'message-info';
+        messageInfo.innerHTML = `
+            <strong>${message.sender.username}</strong> • 
+            ${new Date(message.timestamp).toLocaleTimeString()}
+        `;
+        
+        messageDiv.appendChild(messageContent);
+        messageDiv.appendChild(messageInfo);
+        container.appendChild(messageDiv);
+    });
+    
+    // Scroll to bottom
+    const chatMessages = document.getElementById('chatMessages');
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Send message
+document.getElementById('messageForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const messageInput = document.getElementById('messageInput');
+    const message = messageInput.value.trim();
+    
+    if (!message) return;
+    
+    // Show loading state
+    const submitBtn = document.querySelector('#messageForm button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+    submitBtn.disabled = true;
+    
+    try {
+        const response = await fetch(`/chats/${chatId}/message`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                chatId: chatId,
+                message: message
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            messageInput.value = '';
+            loadMessages(); // Reload messages to show the new one
+        } else {
+            showMessage('Failed to send message: ' + data.error, 'error');
+        }
+    } catch (error) {
+        console.error('Error sending message:', error);
+        showMessage('Failed to send message', 'error');
+    } finally {
+        // Reset button state
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
+});
+
+// Mark messages as read
+async function markAsRead() {
+    try {
+        await fetch(`/chats/${chatId}/read`, {
+            method: 'POST'
+        });
+    } catch (error) {
+        console.error('Error marking as read:', error);
+    }
+}
+
+// Refresh chat
+function refreshChat() {
+    loadMessages();
+}
+
+// Show message notification
+function showMessage(message, type = 'info') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.parentNode.removeChild(alertDiv);
+        }
+    }, 5000);
+}
+
+// Typing indicator (basic implementation)
+document.getElementById('messageInput').addEventListener('input', function() {
+    if (!isTyping) {
+        isTyping = true;
+        // In a real implementation, you would emit a typing event here
+    }
+    
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(() => {
+        isTyping = false;
+        // In a real implementation, you would emit a stop typing event here
+    }, 1000);
+});
+
+// Clean up intervals on page unload
+window.addEventListener('beforeunload', function() {
+    if (messageRefreshInterval) {
+        clearInterval(messageRefreshInterval);
+    }
+});
+</script>

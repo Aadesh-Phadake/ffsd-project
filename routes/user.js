@@ -3,7 +3,7 @@ const router = express.Router();
 const passport = require('passport');
 const User = require('../models/user');
 const wrapAsync = require('../utils/wrapAsync');
-const {saveRedirectUrl, isLoggedIn} = require('../middleware');
+const {saveRedirectUrl, isLoggedIn, requireTraveller} = require('../middleware');
 const Listing = require('../models/listing');
 const Booking = require('../models/booking')
 
@@ -19,7 +19,7 @@ router.route('/login')
  
 router.get('/logout', userController.logout);
 
-router.get('/profile', isLoggedIn, wrapAsync(userController.renderProfile));
+router.get('/profile', isLoggedIn, requireTraveller, wrapAsync(userController.renderProfile));
 router.post('/membership/activate', isLoggedIn, wrapAsync(userController.activateMembership));
 
 router.get('/profile/cancel/:id', isLoggedIn, wrapAsync(userController.deleteBooking));
@@ -42,5 +42,8 @@ router.get('/dashboard/hotels', isLoggedIn, wrapAsync(userController.getUserHote
 
 // Admin dashboard
 router.get('/admin/dashboard', isLoggedIn, wrapAsync(userController.adminDashboard));
+
+// Customer care dashboard
+router.get('/customer-care/dashboard', isLoggedIn, wrapAsync(userController.customerCareDashboard));
 
 module.exports = router;

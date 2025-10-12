@@ -82,10 +82,58 @@ exports.createOrderForListing = async (propertyId, isMember, checkIn, checkOut, 
             throw new Error('Property not found');
         }
 
-        const basePrice = property.price;
-        const adminFee = isMember ? 0 : basePrice * 0.05; // waive for members
+        // Parse dates to calculate nights
+        const parseDate = (dateStr) => {
+            if (!dateStr) return null;
+            
+            // Handle DD-MM-YYYY format (like '14-10-2025')
+            if (dateStr.includes('-') && dateStr.split('-').length === 3) {
+                const parts = dateStr.split('-');
+                if (parts[0].length <= 2) {
+                    // DD-MM-YYYY format
+                    const [day, month, year] = parts.map(Number);
+                    const date = new Date(year, month - 1, day); // month is 0-indexed
+                    return isNaN(date.getTime()) ? null : date;
+                } else {
+                    // YYYY-MM-DD format
+                    const date = new Date(dateStr);
+                    return isNaN(date.getTime()) ? null : date;
+                }
+            }
+            
+            // Fallback: try standard Date parsing
+            const date = new Date(dateStr);
+            return isNaN(date.getTime()) ? null : date;
+        };
+        
+        const checkInDate = parseDate(checkIn);
+        const checkOutDate = parseDate(checkOut);
+        const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
+        const numGuests = parseInt(guests) || 1;
+        
+        // Validate dates and nights
+        if (!checkInDate || !checkOutDate || nights <= 0) {
+            throw new Error('Invalid dates provided. Check-in and check-out dates must be valid and check-out must be after check-in.');
+        }
+        
+        // Calculate: price per night * nights (for up to 2 guests)
+        let basePrice = property.price * nights;
+        
+        // Add ₹500 per night for each guest beyond 2
+        if (numGuests > 2) {
+            const additionalGuestFee = (numGuests - 2) * 500 * nights;
+            basePrice += additionalGuestFee;
+        }
+        
+        // 5% admin fee (waived for members)
+        const adminFee = isMember ? 0 : basePrice * 0.05;
         const totalPrice = basePrice + adminFee;
-
+        
+        // Ensure minimum amount (Razorpay requires minimum 100 paise = ₹1)
+        if (totalPrice < 1) {
+            throw new Error(`Total amount too low: ₹${totalPrice}. Minimum ₹1 required.`);
+        }
+        
         const options = {
             amount: totalPrice * 100, // amount in smallest currency unit
             currency: "INR",

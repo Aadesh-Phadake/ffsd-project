@@ -1,0 +1,344 @@
+<% layout('./layouts/boilerplate') %>
+
+<link rel="stylesheet" href="/css/chat.css">
+
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">
+                <i class="fas fa-comments"></i> Customer Care Dashboard
+                <button class="btn btn-sm btn-outline-primary float-end" onclick="refreshChats()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </h2>
+            
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Active Chats</h5>
+                            <span id="chatCount" class="badge bg-primary">0</span>
+                        </div>
+                        <div class="card-body p-0">
+                            <div id="chatList" class="list-group list-group-flush">
+                                <!-- Chats will be loaded here via AJAX -->
+                                <div class="text-center p-3">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="mt-2 text-muted">Loading chats...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-8">
+                    <div id="chatContainer" class="card">
+                        <div class="card-header">
+                            <h5 id="chatTitle">Select a chat to start helping customers</h5>
+                        </div>
+                        <div class="card-body text-center" id="chatPlaceholder">
+                            <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Choose a conversation from the left panel to view messages and help customers with their booking queries.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.chat-item {
+    border-left: 3px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.chat-item:hover {
+    background-color: #f8f9fa;
+    border-left-color: #007bff;
+}
+
+.chat-item.unread {
+    background-color: #e3f2fd;
+    border-left-color: #2196f3;
+    font-weight: 500;
+}
+
+.chat-item.unread .badge {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.chat-item.active {
+    background-color: #e3f2fd;
+    border-left-color: #2196f3;
+    font-weight: 500;
+}
+
+#chatContainer .chat-messages {
+    height: 400px;
+    overflow-y: auto;
+    padding: 15px;
+    background-color: #f8f9fa;
+}
+
+#chatContainer .message-input {
+    padding: 15px;
+    border-top: 1px solid #dee2e6;
+    background-color: white;
+}
+</style>
+
+<script>
+let currentChatId = null;
+let chatRefreshInterval;
+
+// Load chats on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadChats();
+    
+    // Auto-refresh chats every 5 seconds
+    chatRefreshInterval = setInterval(loadChats, 5000);
+});
+
+// Load all chats
+async function loadChats() {
+    try {
+        const response = await fetch('/api/customer-care/chats');
+        const data = await response.json();
+        
+        const chatList = document.getElementById('chatList');
+        const chatCount = document.getElementById('chatCount');
+        
+        if (data.success && data.chats.length > 0) {
+            chatList.innerHTML = '';
+            chatCount.textContent = data.chats.length;
+            
+            data.chats.forEach(chat => {
+                const isActive = currentChatId === chat._id;
+                
+                const chatElement = document.createElement('div');
+                chatElement.className = `list-group-item list-group-item-action chat-item ${isActive ? 'active' : ''} ${chat.unreadCount > 0 ? 'unread' : ''}`;
+                chatElement.setAttribute('data-chat-id', chat._id);
+                chatElement.onclick = () => loadChat(chat._id);
+                
+                chatElement.innerHTML = `
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">
+                            ${chat.otherParticipant.username}
+                            ${chat.unreadCount > 0 ? `<span class="badge bg-primary">${chat.unreadCount}</span>` : ''}
+                        </h6>
+                        <small class="text-muted">
+                            ${new Date(chat.lastMessageTime).toLocaleDateString()}
+                        </small>
+                    </div>
+                    <p class="mb-1 text-truncate">
+                        ${chat.lastMessage || 'No messages yet'}
+                    </p>
+                `;
+                
+                chatList.appendChild(chatElement);
+            });
+        } else {
+            chatList.innerHTML = `
+                <div class="text-center p-3">
+                    <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                    <h4>No Active Chats</h4>
+                    <p class="text-muted">No customers are currently seeking help.</p>
+                </div>
+            `;
+            chatCount.textContent = '0';
+        }
+    } catch (error) {
+        console.error('Error loading chats:', error);
+        document.getElementById('chatList').innerHTML = `
+            <div class="text-center p-3 text-danger">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Error loading chats. Please refresh the page.</p>
+            </div>
+        `;
+    }
+}
+
+// Load specific chat
+async function loadChat(chatId) {
+    try {
+        currentChatId = chatId;
+        
+        // Update active chat in list
+        document.querySelectorAll('.chat-item').forEach(item => {
+            item.classList.remove('active');
+            if (item.getAttribute('data-chat-id') === chatId) {
+                item.classList.add('active');
+            }
+        });
+        
+        const response = await fetch(`/chats/${chatId}/messages`);
+        const data = await response.json();
+        
+        if (data.success) {
+            displayChat(data.chat);
+        } else {
+            showError('Failed to load chat: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error loading chat:', error);
+        showError('Failed to load chat');
+    }
+}
+
+// Display chat messages
+function displayChat(chat) {
+    const chatContainer = document.getElementById('chatContainer');
+    const otherParticipant = chat.participants.find(p => p._id !== currentUser._id);
+    
+    chatContainer.innerHTML = `
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-comments"></i> 
+                Chat with ${otherParticipant.username}
+            </h5>
+            <div>
+                <button class="btn btn-sm btn-outline-secondary" onclick="refreshChat()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <div id="messagesContainer">
+                <!-- Messages will be loaded here -->
+            </div>
+        </div>
+        
+        <div class="message-input">
+            <form id="messageForm" class="d-flex">
+                <input type="hidden" id="chatId" value="${chat._id}">
+                <input type="text" id="messageInput" class="form-control me-2" placeholder="Type your message..." required>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane"></i> Send
+                </button>
+            </form>
+        </div>
+    `;
+    
+    // Display messages
+    displayMessages(chat.messages);
+    
+    // Set up message form
+    document.getElementById('messageForm').addEventListener('submit', sendMessage);
+    
+    // Auto-refresh messages every 3 seconds
+    if (window.messageRefreshInterval) {
+        clearInterval(window.messageRefreshInterval);
+    }
+    window.messageRefreshInterval = setInterval(() => refreshChat(), 3000);
+}
+
+// Display messages
+function displayMessages(messages) {
+    const container = document.getElementById('messagesContainer');
+    container.innerHTML = '';
+    
+    messages.forEach(message => {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${message.sender._id === currentUser._id ? 'sent' : 'received'}`;
+        
+        const messageContent = document.createElement('div');
+        messageContent.className = 'message-content';
+        messageContent.textContent = message.message;
+        
+        const messageInfo = document.createElement('div');
+        messageInfo.className = 'message-info';
+        messageInfo.innerHTML = `
+            <strong>${message.sender.username}</strong> • 
+            ${new Date(message.timestamp).toLocaleTimeString()}
+        `;
+        
+        messageDiv.appendChild(messageContent);
+        messageDiv.appendChild(messageInfo);
+        container.appendChild(messageDiv);
+    });
+    
+    // Scroll to bottom
+    const chatMessages = document.getElementById('chatMessages');
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Send message
+async function sendMessage(e) {
+    e.preventDefault();
+    
+    const messageInput = document.getElementById('messageInput');
+    const message = messageInput.value.trim();
+    
+    if (!message) return;
+    
+    try {
+        const response = await fetch(`/chats/${currentChatId}/message`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                chatId: currentChatId,
+                message: message
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            messageInput.value = '';
+            refreshChat(); // Reload messages
+        } else {
+            showError('Failed to send message: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error sending message:', error);
+        showError('Failed to send message');
+    }
+}
+
+// Refresh current chat
+async function refreshChat() {
+    if (currentChatId) {
+        await loadChat(currentChatId);
+    }
+}
+
+// Refresh all chats
+function refreshChats() {
+    loadChats();
+}
+
+// Show error message
+function showError(message) {
+    const chatContainer = document.getElementById('chatContainer');
+    chatContainer.innerHTML = `
+        <div class="card-body text-center text-danger">
+            <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+            <h4>Error</h4>
+            <p>${message}</p>
+            <button class="btn btn-primary" onclick="refreshChats()">Try Again</button>
+        </div>
+    `;
+}
+
+// Clean up intervals on page unload
+window.addEventListener('beforeunload', function() {
+    if (chatRefreshInterval) {
+        clearInterval(chatRefreshInterval);
+    }
+    if (window.messageRefreshInterval) {
+        clearInterval(window.messageRefreshInterval);
+    }
+});
+</script>

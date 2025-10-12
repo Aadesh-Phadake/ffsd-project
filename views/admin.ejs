@@ -802,8 +802,80 @@
                 </div>
                 <div class="mini-chart">
                     <canvas id="bookingsChart"></canvas>
-            </div>
+=======
+<%- layout('./layouts/boilerplate') %>
+
+<link rel="stylesheet" href="/css/admin.css">
+
+<div class="admin-wrapper">
+  <!-- Sidebar -->
+  <div class="admin-sidebar" id="adminSidebar">
+    <div class="sidebar-header">
+      <h3><i class="fas fa-tachometer-alt me-2"></i>Admin Panel</h3>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item">
+        <a href="/admin" class="nav-link active" data-page="dashboard">
+          <i class="fas fa-chart-pie"></i>
+          <span>Dashboard</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="/admin/hotels" class="nav-link" data-page="hotels">
+          <i class="fas fa-hotel"></i>
+          <span>Hotel Management</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="/admin/users" class="nav-link" data-page="users">
+          <i class="fas fa-users"></i>
+          <span>User Management</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="/listings" class="nav-link">
+          <i class="fas fa-home"></i>
+          <span>Back to Home</span>
+        </a>
+      </div>
+      <div class="nav-item" style="margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">
+        <a href="/logout" class="nav-link">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Logout</span>
+        </a>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Main Content -->
+  <div class="admin-content" id="adminContent">
+    <div class="admin-page py-4">
+      <div class="admin-header mb-4">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <h1 class="h3 mb-1">Dashboard Overview</h1>
+            <p class="text-muted mb-0">Revenue, bookings and performance metrics</p>
+          </div>
+          <div>
+            <span class="badge bg-success">Online</span>
+          </div>
         </div>
+      </div>
+
+      <div class="row g-4 stat-cards mb-4">
+        <div class="col-12 col-sm-6 col-xl-3">
+          <div class="card stat-card h-100">
+            <div class="card-body d-flex align-items-center">
+              <div class="icon bg-revenue me-3"><i class="fas fa-rupee-sign"></i></div>
+              <div>
+                <div class="label text-muted">Total Revenue</div>
+                <div class="value h4 mb-0">₹<%= stats.revenue %></div>
+              </div>
+>>>>>>> Stashed changes
+            </div>
+          </div>
+        </div>
+<<<<<<< Updated upstream
         <div class="stat-card">
                 <div class="stat-header">
                     <div class="stat-icon avg-booking">
@@ -818,8 +890,21 @@
                 </div>
                 <div class="mini-chart">
                     <canvas id="avgBookingChart"></canvas>
+=======
+
+        <div class="col-12 col-sm-6 col-xl-3">
+          <div class="card stat-card h-100">
+            <div class="card-body d-flex align-items-center">
+              <div class="icon bg-bookings me-3"><i class="fas fa-calendar-check"></i></div>
+              <div>
+                <div class="label text-muted">Total Bookings</div>
+                <div class="value h4 mb-0"><%= stats.bookings %></div>
+              </div>
+>>>>>>> Stashed changes
             </div>
+          </div>
         </div>
+<<<<<<< Updated upstream
         <div class="stat-card">
                 <div class="stat-header">
                     <div class="stat-icon occupancy">
@@ -834,8 +919,21 @@
                 </div>
                 <div class="mini-chart">
                     <canvas id="occupancyChart"></canvas>
+=======
+
+        <div class="col-12 col-sm-6 col-xl-3">
+          <div class="card stat-card h-100">
+            <div class="card-body d-flex align-items-center">
+              <div class="icon bg-avg me-3"><i class="fas fa-chart-line"></i></div>
+              <div>
+                <div class="label text-muted">Avg. Booking Value</div>
+                <div class="value h4 mb-0">₹<%= stats.avgBookingValue %></div>
+              </div>
+>>>>>>> Stashed changes
             </div>
+          </div>
         </div>
+<<<<<<< Updated upstream
         <div class="stat-card">
                 <div class="stat-header">
                     <div class="stat-icon hotels">
@@ -850,10 +948,88 @@
                 </div>
                 <div class="mini-chart">
                     <canvas id="hotelsChart"></canvas>
+=======
+
+        <div class="col-12 col-sm-6 col-xl-3">
+          <div class="card stat-card h-100">
+            <div class="card-body d-flex align-items-center">
+              <div class="icon bg-hotels me-3"><i class="fas fa-hotel"></i></div>
+              <div>
+                <div class="label text-muted">Total Hotels</div>
+                <div class="value h4 mb-0"><%= stats.hotels %></div>
+              </div>
+>>>>>>> Stashed changes
             </div>
+          </div>
         </div>
+      </div>
+
+      <div class="row g-4 mb-4">
+        <div class="col-12 col-lg-6">
+          <div class="card chart-card h-100">
+            <div class="card-header"><i class="fas fa-chart-line me-2"></i>Monthly Revenue</div>
+            <div class="card-body">
+              <canvas id="revenueChart" height="300"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-6">
+          <div class="card chart-card h-100">
+            <div class="card-header"><i class="fas fa-calendar-check me-2"></i>Monthly Bookings</div>
+            <div class="card-body">
+              <canvas id="bookingsChart" height="300"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="row g-4 mb-4">
+        <div class="col-12">
+          <div class="card chart-card h-100">
+            <div class="card-header"><i class="fas fa-trophy me-2"></i>Hotels with Maximum Bookings</div>
+            <div class="card-body">
+              <canvas id="topHotelsChart" height="250"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+  <div class="row g-3 mt-1">
+    <div class="col-12 col-xl-6">
+      <div class="card table-card h-100">
+        <div class="card-header">Recent Activity</div>
+        <div class="card-body p-0">
+          <% if (recentBookings && recentBookings.length > 0) { %>
+            <div class="table-responsive">
+              <table class="table mb-0 align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th scope="col">Date</th>
+                    <th scope="col">Hotel</th>
+                    <th scope="col">User</th>
+                    <th scope="col" class="text-end">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% recentBookings.forEach(b => { %>
+                    <tr>
+                      <td><%= b.createdAt.toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' }) %></td>
+                      <td><%= b.listing ? b.listing.title : 'N/A' %></td>
+                      <td><%= b.user ? b.user.username : 'N/A' %></td>
+                      <td class="text-end">₹<%= b.totalAmount %></td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          <% } else { %>
+            <div class="p-3 text-muted">No recent bookings.</div>
+          <% } %>
+        </div>
+      </div>
     </div>
 
+<<<<<<< Updated upstream
         <!-- Charts Section -->
         <div class="charts-section">
             <!-- Financial Overview Chart -->
@@ -1112,3 +1288,218 @@
     </script>
 </body>
 </html>
+=======
+    <div class="col-12 col-xl-6">
+      <div class="card table-card h-100">
+        <div class="card-header">Most Booked Hotels</div>
+        <div class="card-body p-0">
+          <% if (mostBookedHotels && mostBookedHotels.length > 0) { %>
+            <div class="table-responsive">
+              <table class="table mb-0 align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th scope="col">Hotel</th>
+                    <th scope="col" class="text-end">Bookings</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% mostBookedHotels.forEach(h => { %>
+                    <tr>
+                      <td><%= h.title %></td>
+                      <td class="text-end"><%= h.count %></td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          <% } else { %>
+            <div class="p-3 text-muted">No booking data available.</div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Generate sample monthly data
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const currentMonth = new Date().getMonth();
+    const last6Months = [];
+    const revenueData = [];
+    const bookingData = [];
+    
+    // Generate realistic monthly data
+    for (let i = 5; i >= 0; i--) {
+      const monthIndex = (currentMonth - i + 12) % 12;
+      last6Months.push(months[monthIndex]);
+      const baseRevenue = parseFloat('<%= stats.revenue %>') / 6;
+      const baseBookings = parseInt('<%= stats.bookings %>') / 6;
+      const variation = (Math.random() * 0.4) + 0.8; // 80-120% variation
+      revenueData.push(Math.round(baseRevenue * variation));
+      bookingData.push(Math.round(baseBookings * variation));
+    }
+
+    // 1. Monthly Revenue Chart
+    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+    new Chart(revenueCtx, {
+      type: 'line',
+      data: {
+        labels: last6Months,
+        datasets: [{
+          label: 'Revenue',
+          data: revenueData,
+          borderColor: '#3498db',
+          backgroundColor: 'rgba(52, 152, 219, 0.1)',
+          fill: true,
+          tension: 0.4,
+          borderWidth: 3,
+          pointBackgroundColor: '#3498db',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(0,0,0,0.8)',
+            titleColor: 'white',
+            bodyColor: 'white',
+            callbacks: {
+              label: function(context) {
+                return 'Revenue: ₹' + context.parsed.y.toLocaleString();
+              }
+            }
+          }
+        },
+        scales: {
+          x: { 
+            grid: { display: false },
+            ticks: { color: '#666' }
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(0,0,0,0.1)' },
+            ticks: { 
+              color: '#666',
+              callback: function(value) { 
+                return '₹' + (value/1000) + 'K'; 
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // 2. Monthly Bookings Chart
+    const bookingsCtx = document.getElementById('bookingsChart').getContext('2d');
+    new Chart(bookingsCtx, {
+      type: 'bar',
+      data: {
+        labels: last6Months,
+        datasets: [{
+          label: 'Bookings',
+          data: bookingData,
+          backgroundColor: '#27ae60',
+          borderColor: '#27ae60',
+          borderWidth: 1,
+          borderRadius: 8,
+          borderSkipped: false
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(0,0,0,0.8)',
+            titleColor: 'white',
+            bodyColor: 'white',
+            callbacks: {
+              label: function(context) {
+                return 'Bookings: ' + context.parsed.y;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { 
+            grid: { display: false },
+            ticks: { color: '#666' }
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(0,0,0,0.1)' },
+            ticks: { 
+              color: '#666',
+              stepSize: Math.ceil(Math.max(...bookingData) / 5)
+            }
+          }
+        }
+      }
+    });
+
+    // 3. Hotels with Maximum Bookings Chart
+    const topHotelsCtx = document.getElementById('topHotelsChart').getContext('2d');
+    new Chart(topHotelsCtx, {
+      type: 'bar',
+      data: {
+        labels: ['Grand Palace Hotel', 'Ocean View Resort', 'Mountain Lodge', 'City Center Inn', 'Luxury Suites'],
+        datasets: [{
+          label: 'Total Bookings',
+          data: [48, 42, 35, 28, 22],
+          backgroundColor: [
+            '#3498db',
+            '#2ecc71', 
+            '#f39c12',
+            '#e74c3c',
+            '#9b59b6'
+          ],
+          borderRadius: 8,
+          borderSkipped: false
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'y', // Horizontal bar chart
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(0,0,0,0.8)',
+            titleColor: 'white',
+            bodyColor: 'white',
+            callbacks: {
+              label: function(context) {
+                return 'Total Bookings: ' + context.parsed.x;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { 
+            beginAtZero: true,
+            grid: { color: 'rgba(0,0,0,0.1)' },
+            ticks: { color: '#666' }
+          },
+          y: { 
+            grid: { display: false },
+            ticks: { color: '#666' }
+          }
+        }
+      }
+    });
+    
+    // Admin dashboard is ready
+  });
+</script>
+>>>>>>> Stashed changes
