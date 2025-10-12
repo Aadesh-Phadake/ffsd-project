@@ -8,6 +8,11 @@ const userSchema = new schema({
         required: true,
         unique: true
     },
+    role: {
+        type: String,
+        enum: ['traveller', 'manager', 'admin'],
+        default: 'traveller'
+    },
     // Membership fields
     isMember: {
         type: Boolean,
@@ -26,6 +31,8 @@ const userSchema = new schema({
         type: Date,
         default: null
     }
+}, {
+    timestamps: true  // This will automatically add createdAt and updatedAt fields
 });
 
 userSchema.plugin(passportLocalMongoose);

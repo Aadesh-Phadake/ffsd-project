@@ -17,11 +17,11 @@
                             <div class="row">
                                 <div class="col-6">
                                     <p class="mb-1 text-muted">Check-in</p>
-                                    <p class="mb-3 fw-bold"><%= checkIn %></p>
+                                    <p class="mb-3 fw-bold"><%= new Date(checkIn).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) %></p>
                                 </div>
                                 <div class="col-6">
                                     <p class="mb-1 text-muted">Check-out</p>
-                                    <p class="mb-3 fw-bold"><%= checkOut %></p>
+                                    <p class="mb-3 fw-bold"><%= new Date(checkOut).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) %></p>
                                 </div>
                             </div>
                             <div class="row">
@@ -40,17 +40,23 @@
                         <div class="price-breakdown">
                             <h5 class="mb-3">Price Details</h5>
                             <div class="row">
-                                <div class="col-8">₹<%= listing.price %> × <%= nights %> nights</div>
-                                <div class="col-4 text-end">₹<%= listing.price * nights %></div>
+                                <div class="col-8">₹<%= listing.price.toLocaleString("en-IN") %> × <%= nights %> nights</div>
+                                <div class="col-4 text-end">₹<%= (listing.price * nights).toLocaleString("en-IN") %></div>
                             </div>
+                            <% if (guests > 2) { %>
                             <div class="row">
-                                <div class="col-8">Service fee</div>
-                                <div class="col-4 text-end">₹<%= serviceFee %></div>
+                                <div class="col-8">Extra guests (<%= (guests - 2) %>) × ₹500 × <%= nights %> nights</div>
+                                <div class="col-4 text-end">₹<%= ((guests - 2) * 500 * nights).toLocaleString("en-IN") %></div>
+                            </div>
+                            <% } %>
+                            <div class="row">
+                                <div class="col-8">Service fee (10%)</div>
+                                <div class="col-4 text-end">₹<%= serviceFee.toLocaleString("en-IN") %></div>
                             </div>
                             <hr>
                             <div class="row total-amount">
-                                <div class="col-8">Total (INR)</div>
-                                <div class="col-4 text-end">₹<%= totalAmount %></div>
+                                <div class="col-8"><strong>Total (INR)</strong></div>
+                                <div class="col-4 text-end"><strong>₹<%= totalAmount.toLocaleString("en-IN") %></strong></div>
                             </div>
                         </div>
 
@@ -80,7 +86,7 @@
                                 <input type="text" class="form-control" required>
                             </div>
                             <button type="submit" class="pay-button">
-                                Confirm and Pay ₹<%= totalAmount %>
+                                Confirm and Pay ₹<%= totalAmount.toLocaleString("en-IN") %>
                             </button>
                         </form>
                     </div>

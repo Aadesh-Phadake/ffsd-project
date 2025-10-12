@@ -1,0 +1,861 @@
+<%- layout('./layouts/boilerplate') %>
+
+<link rel="stylesheet" href="/css/admin.css">
+
+<div class="admin-wrapper">
+  <!-- Sidebar -->
+  <div class="admin-sidebar" id="adminSidebar">
+    <div class="sidebar-header">
+      <h3><i class="fas fa-tachometer-alt me-2"></i>Admin Panel</h3>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item">
+        <a href="#dashboard" class="nav-link active" data-page="dashboard">
+          <i class="fas fa-chart-pie"></i>
+          <span>Dashboard</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="#hotels" class="nav-link" data-page="hotels">
+          <i class="fas fa-hotel"></i>
+          <span>Hotel Management</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="#users" class="nav-link" data-page="users">
+          <i class="fas fa-users"></i>
+          <span>User Management</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="/listings" class="nav-link">
+          <i class="fas fa-home"></i>
+          <span>Back to Home</span>
+        </a>
+      </div>
+      <div class="nav-item" style="margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">
+        <a href="/logout" class="nav-link">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Logout</span>
+        </a>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Main Content -->
+  <div class="admin-content" id="adminContent">
+    
+    <!-- Dashboard Page -->
+    <div class="admin-page py-4" id="dashboardPage">
+      <div class="admin-header mb-4">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <h1 class="h3 mb-1">Dashboard Overview</h1>
+            <p class="text-muted mb-0">Revenue, bookings and performance metrics</p>
+          </div>
+          <div>
+            <span class="badge bg-success">Online</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-4 stat-cards mb-4">
+        <div class="col-12 col-sm-6 col-xl-3">
+          <div class="card stat-card h-100">
+            <div class="card-body d-flex align-items-center">
+              <div class="icon bg-revenue me-3"><i class="fas fa-rupee-sign"></i></div>
+              <div>
+                <div class="label text-muted">Total Revenue</div>
+                <div class="value h4 mb-0" id="dashboardRevenue">₹-</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+          <div class="card stat-card h-100">
+            <div class="card-body d-flex align-items-center">
+              <div class="icon bg-bookings me-3"><i class="fas fa-calendar-check"></i></div>
+              <div>
+                <div class="label text-muted">Total Bookings</div>
+                <div class="value h4 mb-0" id="dashboardBookings">-</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+          <div class="card stat-card h-100">
+            <div class="card-body d-flex align-items-center">
+              <div class="icon bg-avg me-3"><i class="fas fa-chart-line"></i></div>
+              <div>
+                <div class="label text-muted">Avg. Booking Value</div>
+                <div class="value h4 mb-0" id="dashboardAvgBooking">₹-</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+          <div class="card stat-card h-100">
+            <div class="card-body d-flex align-items-center">
+              <div class="icon bg-hotels me-3"><i class="fas fa-hotel"></i></div>
+              <div>
+                <div class="label text-muted">Total Hotels</div>
+                <div class="value h4 mb-0" id="dashboardHotels">-</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Section -->
+      <div class="row g-4 mb-4">
+        <!-- Revenue Chart -->
+        <div class="col-12 col-lg-6">
+          <div class="card chart-card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span><i class="fas fa-rupee-sign me-2"></i>Revenue Analysis</span>
+              <select id="revenueFilter" class="form-select form-select-sm" style="width: auto;">
+                <option value="day">Daily</option>
+                <option value="week">Weekly</option>
+                <option value="month" selected>Monthly</option>
+                <option value="year">Yearly</option>
+              </select>
+            </div>
+            <div class="card-body">
+              <canvas id="revenueChart" height="250"></canvas>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Bookings Trend Chart -->
+        <div class="col-12 col-lg-6">
+          <div class="card chart-card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span><i class="fas fa-calendar-check me-2"></i>Bookings Trend</span>
+              <select id="bookingsFilter" class="form-select form-select-sm" style="width: auto;">
+                <option value="day">Daily</option>
+                <option value="week">Weekly</option>
+                <option value="month" selected>Monthly</option>
+                <option value="year">Yearly</option>
+              </select>
+            </div>
+            <div class="card-body">
+              <canvas id="bookingsTrendChart" height="250"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="row g-4 mb-4">
+        <!-- Top Hotels Chart -->
+        <div class="col-12 col-lg-8">
+          <div class="card chart-card h-100">
+            <div class="card-header">
+              <i class="fas fa-trophy me-2"></i>Top 5 Hotels by Bookings
+            </div>
+            <div class="card-body">
+              <canvas id="topHotelsChart" height="200"></canvas>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Summary Stats -->
+        <div class="col-12 col-lg-4">
+          <div class="card chart-card h-100">
+            <div class="card-header"><i class="fas fa-info-circle me-2"></i>Quick Stats</div>
+            <div class="card-body">
+              <div class="text-center mb-3">
+                <h4 id="dashboardUsers" style="color: #7A654B;">-</h4>
+                <p class="text-muted mb-0">Total Users</p>
+              </div>
+              <hr>
+              <div class="text-center">
+                <h4 id="dashboardMembers" style="color: #8B7355;">-</h4>
+                <p class="text-muted mb-0">Premium Members</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hotels Management Page -->
+    <div class="admin-page py-4" id="hotelsPage" style="display: none;">
+      <div class="admin-header mb-4">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <h1 class="h3 mb-1">Hotel Management</h1>
+            <p class="text-muted mb-0">Manage all hotels and their properties</p>
+          </div>
+          <div class="d-flex gap-2">
+            <input type="text" id="hotelSearch" class="form-control" placeholder="Search hotels..." style="width: 300px;">
+            <button class="btn btn-primary" onclick="loadHotels()">
+              <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <div id="hotelsLoading" class="text-center py-5">
+            <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+            <p class="mt-2 text-muted">Loading hotels...</p>
+          </div>
+          <div id="hotelsTableContainer" style="display: none;">
+            <div class="table-responsive">
+              <table class="table table-hover" id="hotelsTable">
+                <thead class="table-light">
+                  <tr>
+                    <th>Hotel</th>
+                    <th>Location</th>
+                    <th>Owner</th>
+                    <th>Price/Night</th>
+                    <th>Bookings</th>
+                    <th>Revenue</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="hotelsTableBody">
+                  <!-- Hotels will be loaded here -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Users Management Page -->
+    <div class="admin-page py-4" id="usersPage" style="display: none;">
+      <div class="admin-header mb-4">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <h1 class="h3 mb-1">User Management</h1>
+            <p class="text-muted mb-0">Manage all registered users and their accounts</p>
+          </div>
+          <div class="d-flex gap-2">
+            <input type="text" id="userSearch" class="form-control" placeholder="Search users..." style="width: 300px;">
+            <button class="btn btn-primary" onclick="loadUsers()">
+              <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <div id="usersLoading" class="text-center py-5">
+            <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+            <p class="mt-2 text-muted">Loading users...</p>
+          </div>
+          <div id="usersTableContainer" style="display: none;">
+            <div class="table-responsive">
+              <table class="table table-hover" id="usersTable">
+                <thead class="table-light">
+                  <tr>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Member Status</th>
+                    <th>Total Bookings</th>
+                    <th>Total Spent</th>
+                    <th>Last Booking</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                  <!-- Users will be loaded here -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmModalTitle">Confirm Action</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="confirmModalBody">
+        Are you sure you want to perform this action?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" id="confirmActionBtn">Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Additional styles for the admin dashboard - only non-conflicting styles */
+.hotel-image {
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+  object-fit: cover;
+  margin-right: 15px;
+}
+</style>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// Global variables
+let currentPage = 'dashboard';
+let allUsers = [];
+let allHotels = [];
+let pendingAction = null;
+
+// Chart instances
+let revenueChart = null;
+let bookingsTrendChart = null;
+let topHotelsChart = null;
+
+// Initialize dashboard
+document.addEventListener('DOMContentLoaded', function() {
+  // Navigation setup
+  setupNavigation();
+  
+  // Load dashboard data
+  loadDashboardData();
+  
+  // Setup search functionality
+  setupSearchHandlers();
+  
+  // Setup modal
+  setupModal();
+  
+  // Initialize charts
+  initializeCharts();
+  
+  // Setup chart filters
+  setupChartFilters();
+});
+
+function setupNavigation() {
+  document.querySelectorAll('.nav-link[data-page]').forEach(link => {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      const page = this.getAttribute('data-page');
+      switchPage(page);
+    });
+  });
+}
+
+function switchPage(page) {
+  // Update active nav link
+  document.querySelectorAll('.nav-link').forEach(link => {
+    link.classList.remove('active');
+  });
+  document.querySelector(`[data-page="${page}"]`).classList.add('active');
+  
+  // Show/hide pages
+  document.querySelectorAll('.admin-page').forEach(pageEl => {
+    pageEl.style.display = 'none';
+  });
+  document.getElementById(`${page}Page`).style.display = 'block';
+  
+  currentPage = page;
+  
+  // Load page data
+  if (page === 'users') {
+    loadUsers();
+  } else if (page === 'hotels') {
+    loadHotels();
+  }
+}
+
+async function loadDashboardData() {
+  try {
+    const [usersRes, hotelsRes] = await Promise.all([
+      fetch('/api/admin/users'),
+      fetch('/api/admin/hotels')
+    ]);
+    
+    const usersData = await usersRes.json();
+    const hotelsData = await hotelsRes.json();
+    
+    if (usersData.success && hotelsData.success) {
+      updateDashboardStats(usersData.users, hotelsData.hotels);
+    }
+  } catch (error) {
+    console.error('Error loading dashboard data:', error);
+  }
+}
+
+function updateDashboardStats(users, hotels) {
+  const totalRevenue = users.reduce((sum, user) => sum + (user.totalSpent || 0), 0);
+  const totalBookings = users.reduce((sum, user) => sum + (user.totalBookings || 0), 0);
+  const avgBooking = totalBookings > 0 ? Math.round(totalRevenue / totalBookings) : 0;
+  const premiumMembers = users.filter(user => user.isMember).length;
+  
+  document.getElementById('dashboardRevenue').textContent = '₹' + totalRevenue.toLocaleString('en-IN');
+  document.getElementById('dashboardBookings').textContent = totalBookings.toLocaleString();
+  document.getElementById('dashboardAvgBooking').textContent = '₹' + avgBooking.toLocaleString('en-IN');
+  document.getElementById('dashboardHotels').textContent = hotels.length.toLocaleString();
+  document.getElementById('dashboardUsers').textContent = users.length.toLocaleString();
+  document.getElementById('dashboardMembers').textContent = premiumMembers.toLocaleString();
+}
+
+async function loadUsers() {
+  try {
+    document.getElementById('usersLoading').style.display = 'block';
+    document.getElementById('usersTableContainer').style.display = 'none';
+    
+    const response = await fetch('/api/admin/users');
+    const data = await response.json();
+    
+    if (data.success) {
+      allUsers = data.users;
+      renderUsers(allUsers);
+    } else {
+      showError('Failed to load users');
+    }
+  } catch (error) {
+    console.error('Error loading users:', error);
+    showError('Error loading users');
+  } finally {
+    document.getElementById('usersLoading').style.display = 'none';
+    document.getElementById('usersTableContainer').style.display = 'block';
+  }
+}
+
+function renderUsers(users) {
+  const tbody = document.getElementById('usersTableBody');
+  tbody.innerHTML = users.map(user => {
+    const memberBadge = user.isMember ? 
+      '<span class="badge bg-success">Premium</span>' : 
+      '<span class="badge bg-secondary">Free</span>';
+    
+    const lastBooking = user.lastBooking ? 
+      new Date(user.lastBooking).toLocaleDateString('en-IN') : 
+      'Never';
+    
+    return `
+      <tr>
+        <td>
+          <div>
+            <h6 class="mb-0">${user.username}</h6>
+          </div>
+        </td>
+        <td>${user.email}</td>
+        <td>${memberBadge}</td>
+        <td>${user.totalBookings}</td>
+        <td>₹${user.totalSpent.toLocaleString('en-IN')}</td>
+        <td>${lastBooking}</td>
+        <td>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-primary" onclick="toggleMembership('${user._id}', ${!user.isMember})">
+              ${user.isMember ? 'Revoke' : 'Grant'} Premium
+            </button>
+            <button class="btn btn-outline-danger" onclick="confirmDelete('user', '${user._id}', '${user.username}')">
+              Delete
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function loadHotels() {
+  try {
+    document.getElementById('hotelsLoading').style.display = 'block';
+    document.getElementById('hotelsTableContainer').style.display = 'none';
+    
+    const response = await fetch('/api/admin/hotels');
+    const data = await response.json();
+    
+    if (data.success) {
+      allHotels = data.hotels;
+      renderHotels(allHotels);
+    } else {
+      showError('Failed to load hotels');
+    }
+  } catch (error) {
+    console.error('Error loading hotels:', error);
+    showError('Error loading hotels');
+  } finally {
+    document.getElementById('hotelsLoading').style.display = 'none';
+    document.getElementById('hotelsTableContainer').style.display = 'block';
+  }
+}
+
+function renderHotels(hotels) {
+  const tbody = document.getElementById('hotelsTableBody');
+  tbody.innerHTML = hotels.map(hotel => {
+    return `
+      <tr>
+        <td>
+          <div class="d-flex align-items-center">
+            <img src="${hotel.images[0]}" alt="${hotel.title}" class="hotel-image">
+            <div>
+              <h6 class="mb-0">${hotel.title}</h6>
+              <small class="text-muted">Created ${new Date(hotel.createdAt).toLocaleDateString('en-IN')}</small>
+            </div>
+          </div>
+        </td>
+        <td>${hotel.location}, ${hotel.country}</td>
+        <td>
+          <div>
+            <strong>${hotel.owner.username}</strong><br>
+            <small class="text-muted">${hotel.owner.email}</small>
+          </div>
+        </td>
+        <td>₹${hotel.price.toLocaleString('en-IN')}</td>
+        <td>${hotel.bookingCount}</td>
+        <td>₹${hotel.revenue.toLocaleString('en-IN')}</td>
+        <td>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-primary" onclick="window.open('/listings/${hotel._id}', '_blank')">
+              View
+            </button>
+            <button class="btn btn-outline-danger" onclick="confirmDelete('hotel', '${hotel._id}', '${hotel.title}')">
+              Delete
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function setupSearchHandlers() {
+  document.getElementById('userSearch').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const filtered = allUsers.filter(user => 
+      user.username.toLowerCase().includes(searchTerm) ||
+      user.email.toLowerCase().includes(searchTerm)
+    );
+    renderUsers(filtered);
+  });
+  
+  document.getElementById('hotelSearch').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const filtered = allHotels.filter(hotel => 
+      hotel.title.toLowerCase().includes(searchTerm) ||
+      hotel.location.toLowerCase().includes(searchTerm) ||
+      hotel.owner.username.toLowerCase().includes(searchTerm)
+    );
+    renderHotels(filtered);
+  });
+}
+
+function setupModal() {
+  document.getElementById('confirmActionBtn').addEventListener('click', executeConfirmedAction);
+}
+
+async function toggleMembership(userId, isMember) {
+  try {
+    const response = await fetch(`/api/admin/users/${userId}/membership`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isMember })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      showSuccess(data.message);
+      loadUsers();
+      loadDashboardData();
+    } else {
+      showError(data.error);
+    }
+  } catch (error) {
+    console.error('Error toggling membership:', error);
+    showError('Error updating membership');
+  }
+}
+
+function confirmDelete(type, id, name) {
+  pendingAction = { type, id };
+  document.getElementById('confirmModalTitle').textContent = `Delete ${type === 'user' ? 'User' : 'Hotel'}`;
+  document.getElementById('confirmModalBody').innerHTML = `
+    Are you sure you want to delete ${type === 'user' ? 'user' : 'hotel'} <strong>"${name}"</strong>?
+    ${type === 'user' ? 'This will also delete all their bookings.' : ''} 
+    This action cannot be undone.
+  `;
+  new bootstrap.Modal(document.getElementById('confirmModal')).show();
+}
+
+async function executeConfirmedAction() {
+  if (!pendingAction) return;
+  
+  const { type, id } = pendingAction;
+  
+  try {
+    const endpoint = type === 'user' ? `/api/admin/users/${id}` : `/api/admin/hotels/${id}`;
+    const response = await fetch(endpoint, { method: 'DELETE' });
+    const data = await response.json();
+    
+    if (data.success) {
+      showSuccess(data.message);
+      
+      if (type === 'user') {
+        loadUsers();
+      } else {
+        loadHotels();
+      }
+      loadDashboardData();
+    } else {
+      showError(data.error);
+    }
+  } catch (error) {
+    console.error(`Error deleting ${type}:`, error);
+    showError(`Error deleting ${type}`);
+  }
+  
+  bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
+  pendingAction = null;
+}
+
+function showSuccess(message) {
+  const toast = document.createElement('div');
+  toast.className = 'alert alert-success position-fixed';
+  toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+  toast.innerHTML = `
+    <i class="fas fa-check-circle me-2"></i>${message}
+    <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+  `;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 5000);
+}
+
+function showError(message) {
+  const toast = document.createElement('div');
+  toast.className = 'alert alert-danger position-fixed';
+  toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+  toast.innerHTML = `
+    <i class="fas fa-exclamation-circle me-2"></i>${message}
+    <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+  `;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 5000);
+}
+
+// Chart Functions
+function initializeCharts() {
+  initializeRevenueChart();
+  initializeBookingsTrendChart();
+  initializeTopHotelsChart();
+}
+
+function setupChartFilters() {
+  document.getElementById('revenueFilter').addEventListener('change', function() {
+    loadRevenueChart(this.value);
+  });
+  
+  document.getElementById('bookingsFilter').addEventListener('change', function() {
+    loadBookingsTrendChart(this.value);
+  });
+}
+
+async function initializeRevenueChart() {
+  const ctx = document.getElementById('revenueChart').getContext('2d');
+  revenueChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        label: 'Revenue (₹)',
+        data: [],
+            borderColor: 'rgb(52, 152, 219)',
+            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+        borderWidth: 3,
+        fill: true,
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: function(value) {
+              return '₹' + value.toLocaleString('en-IN');
+            }
+          }
+        }
+      },
+      interaction: {
+        intersect: false,
+        mode: 'index'
+      }
+    }
+  });
+  
+  // Load initial data
+  loadRevenueChart('month');
+}
+
+async function initializeBookingsTrendChart() {
+  const ctx = document.getElementById('bookingsTrendChart').getContext('2d');
+  bookingsTrendChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: [],
+      datasets: [{
+        label: 'Total Bookings',
+        data: [],
+        backgroundColor: 'rgba(46, 204, 113, 0.6)',
+        borderColor: 'rgba(46, 204, 113, 1)',
+        borderWidth: 2,
+        borderRadius: 5
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            stepSize: 1
+          }
+        }
+      }
+    }
+  });
+  
+  // Load initial data
+  loadBookingsTrendChart('month');
+}
+
+async function initializeTopHotelsChart() {
+  const ctx = document.getElementById('topHotelsChart').getContext('2d');
+  topHotelsChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: [],
+      datasets: [{
+        label: 'Bookings',
+        data: [],
+            backgroundColor: [
+                'rgba(231, 76, 60, 0.4)',
+                'rgba(155, 89, 182, 0.4)',
+                'rgba(241, 196, 15, 0.4)',
+                'rgba(26, 188, 156, 0.4)',
+                'rgba(230, 126, 34, 0.4)'
+            ],
+            borderColor: [
+                'rgba(231, 76, 60, 1)',
+                'rgba(155, 89, 182, 1)',
+                'rgba(241, 196, 15, 1)',
+                'rgba(26, 188, 156, 1)',
+                'rgba(230, 126, 34, 1)'
+            ],
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: {
+            usePointStyle: true,
+            padding: 20
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return context.label + ': ' + context.parsed + ' bookings';
+            }
+          }
+        }
+      }
+    }
+  });
+  
+  // Load initial data
+  loadTopHotelsChart();
+}
+
+async function loadRevenueChart(period) {
+  try {
+    const response = await fetch(`/api/admin/charts/revenue?period=${period}`);
+    const data = await response.json();
+    
+    if (data.success) {
+      revenueChart.data.labels = data.data.map(item => item.label);
+      revenueChart.data.datasets[0].data = data.data.map(item => item.revenue);
+      revenueChart.update();
+    }
+  } catch (error) {
+    console.error('Error loading revenue chart:', error);
+  }
+}
+
+async function loadBookingsTrendChart(period) {
+  try {
+    const response = await fetch(`/api/admin/charts/bookings-trend?period=${period}`);
+    const data = await response.json();
+    
+    if (data.success) {
+      bookingsTrendChart.data.labels = data.data.map(item => item.label);
+      bookingsTrendChart.data.datasets[0].data = data.data.map(item => item.bookings);
+      bookingsTrendChart.update();
+    }
+  } catch (error) {
+    console.error('Error loading bookings trend chart:', error);
+  }
+}
+
+async function loadTopHotelsChart() {
+  try {
+    console.log('Loading top hotels chart...');
+    const response = await fetch('/api/admin/charts/top-hotels');
+    const data = await response.json();
+    
+    console.log('Top hotels response:', data);
+    
+    if (data.success && data.data && data.data.length > 0) {
+      topHotelsChart.data.labels = data.data.map(item => item.name);
+      topHotelsChart.data.datasets[0].data = data.data.map(item => item.bookings);
+      topHotelsChart.update();
+      console.log('Top hotels chart updated successfully');
+    } else {
+      console.log('No top hotels data available');
+      // Show placeholder data or message
+      topHotelsChart.data.labels = ['No Data'];
+      topHotelsChart.data.datasets[0].data = [0];
+      topHotelsChart.update();
+    }
+  } catch (error) {
+    console.error('Error loading top hotels chart:', error);
+    // Show error state
+    topHotelsChart.data.labels = ['Error Loading Data'];
+    topHotelsChart.data.datasets[0].data = [0];
+    topHotelsChart.update();
+  }
+}
+</script>

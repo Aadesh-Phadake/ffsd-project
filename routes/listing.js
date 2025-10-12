@@ -3,17 +3,17 @@ const router = express.Router();
 const Listing = require('../models/listing');
 const wrapAsync = require('../utils/wrapAsync');
 const expressError = require('../utils/expressError');
-const { isLoggedIn , isOwner, validateListing ,isOwnerOrAdmin } = require('../middleware');
+const { isLoggedIn , isOwner, validateListing ,isOwnerOrAdmin, requireManager, requireManagerOrAdmin } = require('../middleware');
 
 const  listingController = require('../controllers/listing');
 
 router.route('/')
     .get(wrapAsync(listingController.index)) 
-    .post(isLoggedIn,validateListing,wrapAsync(listingController.create));
+    .post(isLoggedIn, requireManager, validateListing, wrapAsync(listingController.create));
 
 router.get('/search', wrapAsync(listingController.search));
 
-router.get('/new',isLoggedIn,wrapAsync(listingController.new));
+router.get('/new', isLoggedIn, requireManager, wrapAsync(listingController.new));
 
 router.route('/:id')
     .get(wrapAsync(listingController.show))

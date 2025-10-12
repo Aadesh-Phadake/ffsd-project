@@ -64,7 +64,7 @@
         </div>
 
         <% if (currentUser) { %>
-            <% if (currentUser._id.toString() !== listing.owner._id.toString()) { %>
+            <% if (currentUser._id.toString() !== listing.owner._id.toString() && currentUser.role === 'traveller') { %>
                 <div class="col-md-3">
                     <div class="card shadow-sm booking-card">
                         <div class="card-body">
@@ -72,16 +72,14 @@
                                 ₹<%= (listing.price * 1.05).toLocaleString("en-IN") %> 
                                 <span class="text-muted">/night (including 5% admin fee)</span>
                             </h5>
-                            <form action="/payment/create/<%= listing._id %>" method="GET">
+                            <form action="/payment/create/<%= listing._id %>" method="GET" id="booking-form">
                                 <div class="mb-3">
-                                    <label class="form-label">Check-in Date (DD-MM-YYYY)</label>
-                                    <input type="text" class="form-control" name="checkIn" required 
-                                           placeholder="DD-MM-YYYY" pattern="\d{2}-\d{2}-\d{4}">
+                                    <label class="form-label">Check-in Date</label>
+                                    <input type="date" class="form-control" name="checkIn" id="checkIn" required>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label">Check-out Date (DD-MM-YYYY)</label>
-                                    <input type="text" class="form-control" name="checkOut" required
-                                           placeholder="DD-MM-YYYY" pattern="\d{2}-\d{2}-\d{4}">
+                                    <label class="form-label">Check-out Date</label>
+                                    <input type="date" class="form-control" name="checkOut" id="checkOut" required>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Guests</label>
@@ -99,6 +97,15 @@
                         </div>
                     </div>
                 </div>
+            <% } else if (currentUser.role === 'manager' || currentUser.role === 'admin') { %>
+                <div class="col-md-3">
+                    <div class="card shadow-sm booking-card">
+                        <div class="card-body">
+                            <h5 class="card-title mb-4">₹<%= listing.price.toLocaleString("en-IN") %> <span class="text-muted">/night</span></h5>
+                            <p class="text-center mb-3 text-muted">Booking is only available for travellers</p>
+                        </div>
+                    </div>
+                </div>
             <% } %>
         <% } else { %>
             <div class="col-md-3">
@@ -111,7 +118,7 @@
             </div>
         <% } %>
 
-        <% if (currentUser) { %>
+        <% if (currentUser && currentUser.role === 'traveller') { %>
             <div class="col-8 offset-2 mb-3">
                 <hr>
                 <h5>Leave a Review</h5>
@@ -143,10 +150,30 @@
                 </form>
                 <hr>
             </div>
+        <% } else if (currentUser && (currentUser.role === 'manager' || currentUser.role === 'admin')) { %>
+            <div class="col-8 offset-2 mb-3">
+                <hr>
+                <div class="alert alert-info" role="alert">
+                    <i class="fas fa-info-circle"></i> Only travellers can leave reviews and ratings.
+                </div>
+                <hr>
+            </div>
         <% } %>
 
         <div class="col-8 offset-2 mb-3">
-            <h5>Reviews</h5>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5>Reviews</h5>
+                <% if (listing.reviews.length > 0) { %>
+                    <div class="dropdown">
+                        <select class="form-select" id="reviewSort" style="width: 180px;">
+                            <option value="newest" <%= (typeof sortBy === 'undefined' || sortBy === 'newest') ? 'selected' : '' %>>Newest First</option>
+                            <option value="oldest" <%= sortBy === 'oldest' ? 'selected' : '' %>>Oldest First</option>
+                            <option value="highest" <%= sortBy === 'highest' ? 'selected' : '' %>>Highest Rating</option>
+                            <option value="lowest" <%= sortBy === 'lowest' ? 'selected' : '' %>>Lowest Rating</option>
+                        </select>
+                    </div>
+                <% } %>
+            </div>
             <div id="reviews" class="row">
                 <% for (const review of listing.reviews) { %>
                     <div class="card col-5 ms-3 mb-2">
@@ -167,6 +194,59 @@
     </div>
 
     <script>
-        // Remove the old date validation script since we're using manual input
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkInInput = document.getElementById('checkIn');
+            const checkOutInput = document.getElementById('checkOut');
+            const bookingForm = document.getElementById('booking-form');
+            const reviewSort = document.getElementById('reviewSort');
+            
+            // Set minimum date to today
+            const today = new Date().toISOString().split('T')[0];
+            checkInInput.min = today;
+            checkOutInput.min = today;
+            
+            // Update checkout minimum date when checkin changes
+            checkInInput.addEventListener('change', function() {
+                const checkInDate = new Date(this.value);
+                const nextDay = new Date(checkInDate);
+                nextDay.setDate(checkInDate.getDate() + 1);
+                
+                checkOutInput.min = nextDay.toISOString().split('T')[0];
+                
+                // Clear checkout if it's now invalid
+                if (checkOutInput.value && new Date(checkOutInput.value) <= checkInDate) {
+                    checkOutInput.value = '';
+                }
+            });
+            
+            // Validate form before submission
+            bookingForm.addEventListener('submit', function(e) {
+                const checkInDate = new Date(checkInInput.value);
+                const checkOutDate = new Date(checkOutInput.value);
+                
+                if (checkOutDate <= checkInDate) {
+                    e.preventDefault();
+                    alert('Check-out date must be after check-in date.');
+                    return false;
+                }
+                
+                const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
+                if (nights > 30) {
+                    e.preventDefault();
+                    alert('Maximum booking duration is 30 nights.');
+                    return false;
+                }
+            });
+            
+            // Handle review sorting
+            if (reviewSort) {
+                reviewSort.addEventListener('change', function() {
+                    const sortBy = this.value;
+                    const currentUrl = new URL(window.location);
+                    currentUrl.searchParams.set('sortBy', sortBy);
+                    window.location.href = currentUrl.toString();
+                });
+            }
+        });
     </script>
 </body>
