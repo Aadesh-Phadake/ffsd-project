@@ -2,18 +2,18 @@
 <div class="row mt-3">
     <div class="col-8 offset-2">
         <div class="card shadow">
-            <div class="card-header bg-primary text-white text-center">
-                <h2><i class="fas fa-user-plus me-2"></i>Traveler Registration</h2>
-                <p class="mb-0">Join TravelNest as a Traveler</p>
+            <div class="card-header bg-success text-white text-center">
+                <h2><i class="fas fa-building me-2"></i>Property Manager Registration</h2>
+                <p class="mb-0">Join TravelNest as a Property Manager</p>
             </div>
             <div class="card-body">
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle me-2"></i>
-                    <strong>Traveler Benefits:</strong> Book amazing stays, manage your bookings, leave reviews, and explore new places with TravelNest.
+                    <strong>Manager Benefits:</strong> List properties, manage bookings, view analytics, and grow your business with TravelNest.
                 </div>
 
-                <form action="/signup" method="post" class="needs-validation" novalidate id="signupForm">
-                    <input type="hidden" name="role" value="user" required>
+                <form action="/manager-signup" method="post" class="needs-validation" novalidate id="managerSignupForm">
+                    <input type="hidden" name="role" value="manager" required>
                     
                     <div class="row">
                         <div class="col-md-6">
@@ -49,6 +49,32 @@
                         </div>
                     </div>
 
+                    <hr class="my-4">
+                    <h5 class="text-primary"><i class="fas fa-building me-2"></i>Business Information</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="businessName" class="form-label">Business Name *</label>
+                                <input type="text" name="businessName" class="form-control" required>
+                                <div class="invalid-feedback">Please enter your business name</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="phoneNumber" class="form-label">Phone Number *</label>
+                                <input type="tel" name="phoneNumber" class="form-control" required>
+                                <div class="invalid-feedback">Please enter your phone number</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="businessDescription" class="form-label">Business Description *</label>
+                        <textarea name="businessDescription" class="form-control" rows="3" placeholder="Tell us about your business..." required></textarea>
+                        <div class="invalid-feedback">Please provide a business description</div>
+                    </div>
+
                     <div class="mb-3">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="termsCheck" required>
@@ -59,15 +85,15 @@
                     </div>
 
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-primary btn-lg">
-                            <i class="fas fa-user-plus me-2"></i>Register as Traveler
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-building me-2"></i>Register as Manager
                         </button>
                     </div>
                 </form>
                 
                 <div class="text-center mt-3">
                     <p class="text-muted">Already have an account? <a href="/login">Login here</a></p>
-                    <p class="text-muted">Want to list properties? <a href="/manager-signup">Sign up as Manager</a></p>
+                    <p class="text-muted">Want to book properties instead? <a href="/signup">Sign up as Traveler</a></p>
                 </div>
             </div>
         </div>
@@ -76,7 +102,7 @@
 
 <script>
 // Password confirmation validation
-document.getElementById('signupForm').addEventListener('submit', function(e) {
+document.getElementById('managerSignupForm').addEventListener('submit', function(e) {
     const password = document.querySelector('input[name="password"]').value;
     const confirmPassword = document.querySelector('input[name="confirmPassword"]').value;
     

@@ -7,16 +7,21 @@
     <div class="collapse navbar-collapse" id="navbarNav">
       <div class="navbar-nav">
         <a class="nav-link" href="/listings">Explore</a>
-        <a class="nav-link" href="/listings/new">TravelNest Your Home</a>
       </div>
       <div class="navbar-nav ms-auto">
         <% if(!currentUser) { %>
         <a class="nav-link" href="/signup">Sign Up</a>
         <a class="nav-link" href="/login">Login</a>
         <% } else { %>
+        <% if(currentUser.role === 'user') { %>
         <a class="nav-link" href="/profile">My Profile</a>
-        <a class="nav-link" href="/dashboard">Dashboard</a>
-        <% if(currentUser.username === "TravelNest") { %>
+        <% } %>
+        <% if(currentUser.role === 'manager') { %>
+        <a class="nav-link" href="/profile">My Profile</a>
+        <a class="nav-link" href="/manager">Manager Dashboard</a>
+        <a class="nav-link" href="/listings/new">Add Property</a>
+        <% } %>
+        <% if(currentUser.role === 'admin') { %>
         <a class="nav-link" href="/admin" style="color: #c58b5e;">Admin Panel</a>
         <% } %>
         <a class="nav-link" href="/logout">Logout</a>

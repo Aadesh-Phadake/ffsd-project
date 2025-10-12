@@ -4,31 +4,27 @@
         <h1>All Listings</h1>
         <div class="row mb-4">
             <div class="col-md-8 offset-md-2">
-                <form id="search-form" class="d-flex gap-2 search-form">
-                    <input type="text" class="form-control" id="search-input" name="search" placeholder="Search by name or location">
-                    <select class="form-control" id="price-filter" name="price">
+                <form class="d-flex gap-2 search-form" action="/listings" method="GET">
+                    <input type="text" class="form-control" name="search" placeholder="Search by name or location">
+                    <select class="form-control" name="price">
                         <option value="">Price Range</option>
                         <option value="0-1000">Under ₹1,000</option>
                         <option value="1000-2000">₹1,000 - ₹2,000</option>
                         <option value="2000-3000">₹2,000 - ₹3,000</option>
                         <option value="3000+">Above ₹3,000</option>
                     </select>
-                    <select class="form-control" id="rating-filter" name="rating">
+                    <select class="form-control" name="rating">
                         <option value="">Rating</option>
                         <option value="4">4+ Stars</option>
                         <option value="3">3+ Stars</option>
                         <option value="2">2+ Stars</option>
                         <option value="1">1+ Stars</option>
                     </select>
-                    <button type="button" class="btn add-btn" id="search-btn">
-                        <span id="search-text">Search</span>
-                        <span id="search-spinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                    </button>
+                    <button type="submit" class="btn add-btn">Search</button>
                 </form>
-                <div id="search-results-info" class="mt-2 text-muted d-none"></div>
             </div>
         </div>
-        <div id="listings-container" class="row g-4">  
+        <div class="row g-4">  
             <% listings.forEach(listing => { %>
             <div class="col-lg-3 col-md-4 col-sm-6 col-12">
                 <a href="/listings/<%= listing.id %>" style="text-decoration: none; color: inherit;">
@@ -50,160 +46,4 @@
             <% }) %>
         </div>
     </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM loaded, initializing search...');
-            
-            const searchForm = document.getElementById('search-form');
-            const searchBtn = document.getElementById('search-btn');
-            const searchText = document.getElementById('search-text');
-            const searchSpinner = document.getElementById('search-spinner');
-            const searchResultsInfo = document.getElementById('search-results-info');
-            const listingsContainer = document.getElementById('listings-container');
-            const searchInput = document.getElementById('search-input');
-            const priceFilter = document.getElementById('price-filter');
-            const ratingFilter = document.getElementById('rating-filter');
-
-            // Check if all elements exist
-            if (!searchForm || !searchBtn || !listingsContainer) {
-                console.error('Required elements not found!', {
-                    searchForm: !!searchForm,
-                    searchBtn: !!searchBtn,
-                    listingsContainer: !!listingsContainer
-                });
-                return;
-            }
-
-            console.log('All elements found, setting up event listeners...');
-            let searchTimeout = null;
-
-            // Function to show loading state
-            function showLoading() {
-                searchBtn.disabled = true;
-                searchText.classList.add('d-none');
-                searchSpinner.classList.remove('d-none');
-            }
-
-            // Function to hide loading state
-            function hideLoading() {
-                searchBtn.disabled = false;
-                searchText.classList.remove('d-none');
-                searchSpinner.classList.add('d-none');
-            }
-
-            // Function to create listing card HTML
-            function createListingCard(listing) {
-                const avgRating = listing.reviews && listing.reviews.length > 0 
-                    ? (listing.reviews.reduce((sum, review) => sum + review.rating, 0) / listing.reviews.length).toFixed(1)
-                    : null;
-
-                return `
-                    <div class="col-lg-3 col-md-4 col-sm-6 col-12">
-                        <a href="/listings/${listing._id}" style="text-decoration: none; color: inherit;">
-                            <div class="card listing-card h-100">
-                                <img src="${listing.images && listing.images.length > 0 ? listing.images[0] : 'https://images.unsplash.com/photo-1657002865844-c4127d542c41?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTV8fGhvdGVscyUyMGRlZmF1bHR8ZW58MHx8MHx8fDA%3D'}" 
-                                     class="card-img-top" alt="listing-img" style="height: 20rem; object-fit: cover;">
-                                <div class="card-body">
-                                    <h5 class="card-title"><b>${listing.title}</b></h5>
-                                    <h6 class="card-price">₹${listing.price.toLocaleString("en-IN")} (including 5% admin fee)</h6>
-                                    ${avgRating ? `<p class="mb-0">Rating: ${avgRating} ⭐</p>` : ''}
-                                </div>
-                                <div class="card-img-overlay"></div>
-                            </div>
-                        </a>
-                    </div>
-                `;
-            }
-
-            // Function to perform search
-            async function performSearch() {
-                console.log('performSearch called');
-                const searchValue = searchInput.value.trim();
-                const priceValue = priceFilter.value;
-                const ratingValue = ratingFilter.value;
-
-                console.log('Search params:', { searchValue, priceValue, ratingValue });
-                showLoading();
-
-                try {
-                    const params = new URLSearchParams();
-                    if (searchValue) params.append('search', searchValue);
-                    if (priceValue) params.append('price', priceValue);
-                    if (ratingValue) params.append('rating', ratingValue);
-
-                    const response = await fetch(`/listings/search?${params}`);
-                    const data = await response.json();
-
-                    if (data.success) {
-                        // Update listings
-                        if (data.listings.length === 0) {
-                            listingsContainer.innerHTML = `
-                                <div class="col-12 text-center py-5">
-                                    <h4 class="text-muted">No listings found</h4>
-                                    <p class="text-muted">Try adjusting your search criteria</p>
-                                </div>
-                            `;
-                        } else {
-                            listingsContainer.innerHTML = data.listings.map(createListingCard).join('');
-                        }
-
-                        // Update results info
-                        const searchTerms = [];
-                        if (searchValue) searchTerms.push(`"${searchValue}"`);
-                        if (priceValue) searchTerms.push(`price: ${priceFilter.options[priceFilter.selectedIndex].text}`);
-                        if (ratingValue) searchTerms.push(`rating: ${ratingFilter.options[ratingFilter.selectedIndex].text}`);
-
-                        if (searchTerms.length > 0) {
-                            searchResultsInfo.textContent = `Found ${data.count} listing(s) for ${searchTerms.join(', ')}`;
-                            searchResultsInfo.classList.remove('d-none');
-                        } else {
-                            searchResultsInfo.classList.add('d-none');
-                        }
-                    } else {
-                        throw new Error('Search failed');
-                    }
-                } catch (error) {
-                    console.error('Search error:', error);
-                    listingsContainer.innerHTML = `
-                        <div class="col-12 text-center py-5">
-                            <h4 class="text-danger">Search Error</h4>
-                            <p class="text-muted">Please try again later</p>
-                        </div>
-                    `;
-                    searchResultsInfo.classList.add('d-none');
-                } finally {
-                    hideLoading();
-                }
-            }
-
-            // Form submit handler
-            searchForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                console.log('Form submit prevented, performing search...');
-                performSearch();
-            });
-
-            // Button click handler (backup)
-            searchBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                console.log('Search button clicked, performing search...');
-                performSearch();
-            });
-
-            // Real-time search on input (with debouncing)
-            searchInput.addEventListener('input', function() {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    if (searchInput.value.trim().length >= 2 || searchInput.value.trim().length === 0) {
-                        performSearch();
-                    }
-                }, 500); // Wait 500ms after user stops typing
-            });
-
-            // Filter change handlers
-            priceFilter.addEventListener('change', performSearch);
-            ratingFilter.addEventListener('change', performSearch);
-        });
-    </script>
 </body>

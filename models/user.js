@@ -8,23 +8,29 @@ const userSchema = new schema({
         required: true,
         unique: true
     },
-    // Membership fields
-    isMember: {
-        type: Boolean,
-        default: false
+    role: {
+        type: String,
+        enum: ['user', 'manager', 'admin'],
+        default: 'user'
     },
-    membershipExpiresAt: {
-        type: Date,
-        default: null
+    // Manager-specific fields
+    businessName: {
+        type: String,
+        required: function() {
+            return this.role === 'manager';
+        }
     },
-    // Cancellation tracking
-    freeCancellationsUsed: {
-        type: Number,
-        default: 0
+    phoneNumber: {
+        type: String,
+        required: function() {
+            return this.role === 'manager';
+        }
     },
-    freeCancellationsResetAt: {
-        type: Date,
-        default: null
+    businessDescription: {
+        type: String,
+        required: function() {
+            return this.role === 'manager';
+        }
     }
 });
 

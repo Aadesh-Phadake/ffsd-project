@@ -1,4 +1,128 @@
 <% layout('./layouts/boilerplate') %>
+<style>
+    /* Enhanced date picker styling */
+    .form-control[type="date"] {
+        position: relative;
+        cursor: pointer;
+        background-color: #fff;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        padding: 12px 16px;
+        font-size: 16px;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control[type="date"]:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        outline: none;
+    }
+    
+    .form-control[type="date"]:hover {
+        border-color: #007bff;
+    }
+    
+    /* Custom date picker icon */
+    .form-control[type="date"]::-webkit-calendar-picker-indicator {
+        background: transparent;
+        bottom: 0;
+        color: transparent;
+        cursor: pointer;
+        height: auto;
+        left: 0;
+        position: absolute;
+        right: 0;
+        top: 0;
+        width: auto;
+    }
+    
+    /* Date picker container */
+    .date-input-container {
+        position: relative;
+    }
+    
+    .date-input-container::after {
+        content: "📅";
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+        font-size: 18px;
+    }
+    
+    /* Booking form enhancements */
+    .booking-card {
+        border: none;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        border-radius: 12px;
+    }
+    
+    .booking-card .card-body {
+        padding: 24px;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 8px;
+    }
+    
+    .btn.add-btn {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        border: none;
+        border-radius: 8px;
+        padding: 12px 24px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn.add-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+    }
+    
+    /* Price breakdown styling */
+    .price-breakdown {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 20px;
+        border: 1px solid #e9ecef;
+    }
+    
+    .breakdown-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        font-size: 14px;
+    }
+    
+    .breakdown-item.total {
+        font-size: 16px;
+        padding-top: 12px;
+        border-top: 2px solid #dee2e6;
+        margin-top: 8px;
+    }
+    
+    .breakdown-item.total strong {
+        color: #007bff;
+    }
+    
+    .breakdown-item:not(.total) {
+        color: #6c757d;
+    }
+    
+    .breakdown-item:not(.total):hover {
+        background: rgba(0, 123, 255, 0.05);
+        border-radius: 4px;
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+</style>
 <body>
     <div class="row mt-5">
         <div class="card listing-card col-6 offset-2 show-card">
@@ -36,19 +160,6 @@
                     <% } %>
                     <b>Location:</b> <%= listing.location %>, <%= listing.country %>
                 </p>
-                <div class="mb-3">
-                    <div style="width:100%;height:300px;overflow:hidden;border-radius:8px;">
-                        <iframe
-                          width="100%"
-                          height="300"
-                          style="border:0"
-                          loading="lazy"
-                          allowfullscreen
-                          referrerpolicy="no-referrer-when-downgrade"
-                          src="https://www.google.com/maps?q=<%= encodeURIComponent(listing.location + ', ' + listing.country) %>&output=embed">
-                        </iframe>
-                    </div>
-                </div>
 
                 <% if (currentUser && (currentUser._id.toString() === listing.owner._id.toString() || currentUser.username === "TravelNest")) { %>
                     <div class="btns d-flex gap-2 mt-3">
@@ -69,19 +180,44 @@
                     <div class="card shadow-sm booking-card">
                         <div class="card-body">
                             <h5 class="card-title mb-4">
-                                ₹<%= (listing.price * 1.05).toLocaleString("en-IN") %> 
-                                <span class="text-muted">/night (including 5% admin fee)</span>
+                                <span id="basePrice">₹<%= listing.price.toLocaleString("en-IN") %></span>
+                                <span class="text-muted">/night</span>
                             </h5>
-                            <form action="/payment/create/<%= listing._id %>" method="GET">
+                            
+                            <!-- Price breakdown -->
+                            <div id="priceBreakdown" class="price-breakdown" style="display: none;">
+                                <div class="breakdown-item">
+                                    <span>Base price (<span id="nightsCount">0</span> nights × ₹<%= listing.price.toLocaleString("en-IN") %>)</span>
+                                    <span id="baseTotal">₹0</span>
+                                </div>
+                                <div class="breakdown-item">
+                                    <span>Guests (<span id="guestsCount">0</span> guests)</span>
+                                    <span id="guestsFee">₹0</span>
+                                </div>
+                                <div class="breakdown-item">
+                                    <span>Admin fee (5%)</span>
+                                    <span id="adminFee">₹0</span>
+                                </div>
+                                <hr>
+                                <div class="breakdown-item total">
+                                    <strong>Total</strong>
+                                    <strong id="totalPrice">₹0</strong>
+                                </div>
+                            </div>
+                            <form action="/payment/create/<%= listing._id %>" method="GET" id="bookingForm">
                                 <div class="mb-3">
-                                    <label class="form-label">Check-in Date (DD-MM-YYYY)</label>
-                                    <input type="text" class="form-control" name="checkIn" required 
-                                           placeholder="DD-MM-YYYY" pattern="\d{2}-\d{2}-\d{4}">
+                                    <label class="form-label">Check-in Date</label>
+                                    <div class="date-input-container">
+                                        <input type="date" class="form-control" name="checkIn" id="checkInDate" required 
+                                               min="<%= new Date().toISOString().split('T')[0] %>">
+                                    </div>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label">Check-out Date (DD-MM-YYYY)</label>
-                                    <input type="text" class="form-control" name="checkOut" required
-                                           placeholder="DD-MM-YYYY" pattern="\d{2}-\d{2}-\d{4}">
+                                    <label class="form-label">Check-out Date</label>
+                                    <div class="date-input-container">
+                                        <input type="date" class="form-control" name="checkOut" id="checkOutDate" required
+                                               min="<%= new Date().toISOString().split('T')[0] %>">
+                                    </div>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Guests</label>
@@ -93,9 +229,120 @@
                                         <option value="5">5 guests</option>
                                     </select>
                                 </div>
-                                <button type="submit" class="btn add-btn w-100 mb-2">Book Now</button>
-                                <a href="/listings/<%= listing._id %>/taxi" class="btn btn-outline-primary w-100">Taxi Services</a>
+                                <button type="submit" class="btn add-btn w-100">Book Now</button>
                             </form>
+                            
+                            <script>
+                                // Enhanced date picker functionality with dynamic pricing
+                                document.addEventListener('DOMContentLoaded', function() {
+                                    const checkInDate = document.getElementById('checkInDate');
+                                    const checkOutDate = document.getElementById('checkOutDate');
+                                    const guestsSelect = document.querySelector('select[name="guests"]');
+                                    const priceBreakdown = document.getElementById('priceBreakdown');
+                                    
+                                    // Base price from server
+                                    const basePricePerNight = <%= listing.price %>;
+                                    
+                                    // Set minimum date to today
+                                    const today = new Date().toISOString().split('T')[0];
+                                    checkInDate.min = today;
+                                    checkOutDate.min = today;
+                                    
+                                    // Function to calculate and display price
+                                    function calculatePrice() {
+                                        const checkIn = new Date(checkInDate.value);
+                                        const checkOut = new Date(checkOutDate.value);
+                                        const guests = parseInt(guestsSelect.value) || 1;
+                                        
+                                        if (!checkInDate.value || !checkOutDate.value || checkOut <= checkIn) {
+                                            priceBreakdown.style.display = 'none';
+                                            return;
+                                        }
+                                        
+                                        // Calculate nights
+                                        const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
+                                        
+                                        if (nights <= 0) {
+                                            priceBreakdown.style.display = 'none';
+                                            return;
+                                        }
+                                        
+                                        // Calculate costs
+                                        const baseTotal = basePricePerNight * nights;
+                                        const guestsFee = guests > 2 ? (guests - 2) * 500 * nights : 0; // ₹500 per extra guest per night
+                                        const subtotal = baseTotal + guestsFee;
+                                        const adminFee = Math.round(subtotal * 0.05); // 5% admin fee
+                                        const total = subtotal + adminFee;
+                                        
+                                        // Update display
+                                        document.getElementById('nightsCount').textContent = nights;
+                                        document.getElementById('guestsCount').textContent = guests;
+                                        document.getElementById('baseTotal').textContent = '₹' + baseTotal.toLocaleString('en-IN');
+                                        document.getElementById('guestsFee').textContent = '₹' + guestsFee.toLocaleString('en-IN');
+                                        document.getElementById('adminFee').textContent = '₹' + adminFee.toLocaleString('en-IN');
+                                        document.getElementById('totalPrice').textContent = '₹' + total.toLocaleString('en-IN');
+                                        
+                                        // Show price breakdown
+                                        priceBreakdown.style.display = 'block';
+                                        
+                                        // Update button text
+                                        const submitBtn = document.querySelector('.btn.add-btn');
+                                        submitBtn.textContent = `Book Now - ₹${total.toLocaleString('en-IN')}`;
+                                    }
+                                    
+                                    // Update check-out minimum date when check-in changes
+                                    checkInDate.addEventListener('change', function() {
+                                        const selectedCheckIn = new Date(this.value);
+                                        const nextDay = new Date(selectedCheckIn);
+                                        nextDay.setDate(nextDay.getDate() + 1);
+                                        
+                                        checkOutDate.min = nextDay.toISOString().split('T')[0];
+                                        
+                                        // If check-out is before new minimum, clear it
+                                        if (checkOutDate.value && new Date(checkOutDate.value) <= selectedCheckIn) {
+                                            checkOutDate.value = '';
+                                        }
+                                        
+                                        calculatePrice();
+                                    });
+                                    
+                                    // Validate check-out is after check-in
+                                    checkOutDate.addEventListener('change', function() {
+                                        const checkIn = new Date(checkInDate.value);
+                                        const checkOut = new Date(this.value);
+                                        
+                                        if (checkOut <= checkIn) {
+                                            alert('Check-out date must be after check-in date');
+                                            this.value = '';
+                                            calculatePrice();
+                                            return;
+                                        }
+                                        
+                                        calculatePrice();
+                                    });
+                                    
+                                    // Update price when guests change
+                                    guestsSelect.addEventListener('change', calculatePrice);
+                                    
+                                    // Form validation
+                                    document.getElementById('bookingForm').addEventListener('submit', function(e) {
+                                        const checkIn = new Date(checkInDate.value);
+                                        const checkOut = new Date(checkOutDate.value);
+                                        
+                                        if (checkOut <= checkIn) {
+                                            e.preventDefault();
+                                            alert('Please select a valid check-out date after check-in date');
+                                            return false;
+                                        }
+                                        
+                                        // Calculate nights for user feedback
+                                        const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
+                                        if (nights > 0) {
+                                            console.log(`Booking for ${nights} night(s)`);
+                                        }
+                                    });
+                                });
+                            </script>
                         </div>
                     </div>
                 </div>

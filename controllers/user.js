@@ -1,23 +1,51 @@
 const User = require('../models/user');
 const Booking = require('../models/booking');
 const Listing = require('../models/listing');
-const Request = require('../models/request');
 
 module.exports.renderSignup = (req, res) => {
     res.render('users/signup');
 };
 
+module.exports.renderManagerSignup = (req, res) => {
+    res.render('users/manager-signup');
+};
+
 module.exports.signup = async (req, res) => {
     try{
-    let {username, email, password} = req.body;
-    let user = new User({username, email});
-    let registeredUser = await User.register(user, password);
-    req.login(registeredUser, err => {
-        if(err) return next(err);
-        req.flash('success', 'Welcome to TravelNest!');
-        res.redirect('/listings');
-    });
-    
+        let {username, email, password, role, businessName, phoneNumber, businessDescription} = req.body;
+        
+        // Validate password confirmation
+        if (req.body.confirmPassword !== password) {
+            req.flash('error', 'Passwords do not match');
+            return res.redirect('/signup');
+        }
+        
+        // Create user object with role
+        let userData = {username, email, role: role || 'user'};
+        
+        // Add manager-specific fields if role is manager
+        if (role === 'manager') {
+            userData.businessName = businessName;
+            userData.phoneNumber = phoneNumber;
+            userData.businessDescription = businessDescription;
+        }
+        
+        let user = new User(userData);
+        let registeredUser = await User.register(user, password);
+        
+        req.login(registeredUser, err => {
+            if(err) return next(err);
+            
+            // Different welcome messages based on role
+            if (role === 'manager') {
+                req.flash('success', 'Welcome to TravelNest! Your manager account has been created successfully.');
+            } else {
+                req.flash('success', 'Welcome to TravelNest! Your account has been created successfully.');
+            }
+            
+            res.redirect('/listings');
+        });
+        
     } catch(e){
         req.flash('error', e.message);
         res.redirect('/signup');
@@ -29,7 +57,21 @@ module.exports.renderLogin = (req, res) => {
 };
 
 module.exports.login = async (req, res) => {
+    console.log('Login successful for user:', req.user.username);
+    console.log('User role:', req.user.role);
+    console.log('Redirect URL:', res.locals.redirectUrl);
+    
     req.flash('success', 'Welcome back to TravelNest!');
+    
+    // Role-based redirects
+    if (req.user.role === 'admin') {
+        console.log('Admin user detected, redirecting to admin panel');
+        return res.redirect('/admin');
+    } else if (req.user.role === 'manager') {
+        console.log('Manager user detected, redirecting to manager dashboard');
+        return res.redirect('/manager');
+    }
+    
     res.redirect(res.locals.redirectUrl || '/listings');
 };
 
@@ -48,33 +90,6 @@ module.exports.renderProfile = async (req, res) => {
     res.render('users/profile', { bookings });
 };
 
-module.exports.activateMembership = async (req, res) => {
-    try {
-        const user = await User.findById(req.user._id);
-        if (!user) {
-            req.flash('error', 'User not found');
-            return res.redirect('/profile');
-        }
-        const now = new Date();
-        const expires = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-        user.isMember = true;
-        user.membershipExpiresAt = expires;
-        
-        // Initialize cancellation tracking for new members
-        if (!user.freeCancellationsResetAt) {
-            user.freeCancellationsResetAt = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-            user.freeCancellationsUsed = 0;
-        }
-        
-        await user.save();
-        req.flash('success', 'Membership activated for 30 days!');
-        res.redirect('/profile');
-    } catch (e) {
-        req.flash('error', 'Could not activate membership');
-        res.redirect('/profile');
-    }
-};
-
 module.exports.createBooking = async (req, res) => {
     const listing = await Listing.findById(req.params.id);
     if (!listing) {
@@ -84,29 +99,36 @@ module.exports.createBooking = async (req, res) => {
 
     const { checkIn, checkOut, guests } = req.body;
     
-    // Parse the dates
+    // Parse the dates (now in YYYY-MM-DD format from HTML5 date input)
     const parseDate = (dateStr) => {
-        const parts = dateStr.split('-');
-        if (parts.length !== 3) return null;
-        const [day, month, year] = parts;
-        // Month is 0-based in JavaScript Date
-        return new Date(year, month - 1, day);
+        if (!dateStr) return null;
+        // HTML5 date input provides YYYY-MM-DD format
+        return new Date(dateStr);
     };
 
     const checkInDate = parseDate(checkIn);
     const checkOutDate = parseDate(checkOut);
 
     let nights = 0;
-    let serviceFee = 0;
+    let guestsFee = 0;
+    let adminFee = 0;
     let totalAmount = 0;
 
     // Calculate values if dates are valid, otherwise use 0
     if (checkInDate && checkOutDate && !isNaN(checkInDate.getTime()) && !isNaN(checkOutDate.getTime())) {
         nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
         if (nights > 0) {
-            const isActiveMember = req.user && req.user.isMember && req.user.membershipExpiresAt && new Date(req.user.membershipExpiresAt) > new Date();
-            serviceFee = isActiveMember ? 0 : Math.round(listing.price * nights * 0.1);
-            totalAmount = (listing.price * nights) + serviceFee;
+            const numGuests = parseInt(guests) || 1;
+            const baseTotal = listing.price * nights;
+            
+            // Guest fee: ₹500 per extra guest per night (after 2 guests)
+            guestsFee = numGuests > 2 ? (numGuests - 2) * 500 * nights : 0;
+            
+            // Admin fee: 5% of subtotal
+            const subtotal = baseTotal + guestsFee;
+            adminFee = Math.round(subtotal * 0.05);
+            
+            totalAmount = subtotal + adminFee;
         }
     }
 
@@ -123,401 +145,9 @@ module.exports.createBooking = async (req, res) => {
     req.flash('success', 'Booking confirmed successfully!');
     res.redirect('/profile');
 };
-
-// Create service request or complaint for a booking
-module.exports.createRequest = async (req, res) => {
-    const { bookingId } = req.params;
-    const { type, message } = req.body;
-
-    const booking = await Booking.findById(bookingId).populate('listing');
-    if (!booking) {
-        req.flash('error', 'Booking not found');
-        return res.redirect('/profile');
-    }
-    if (String(booking.user) !== String(req.user._id)) {
-        req.flash('error', 'Unauthorized');
-        return res.redirect('/profile');
-    }
-
-    // Basic check-in gate: allow once current date >= check-in date (supports DD-MM-YYYY)
-    const parseDMY = (dmy) => {
-        const [day, month, year] = (dmy || '').split('-').map(Number);
-        if (!day || !month || !year) return null;
-        return new Date(year, month - 1, day);
-    };
-    const now = new Date();
-    const checkInDate = parseDMY(booking.checkIn);
-    if (checkInDate && now < checkInDate) {
-        req.flash('error', 'You can request services/complaints after check-in.');
-        return res.redirect('/profile');
-    }
-
-    const newRequest = new Request({
-        user: req.user._id,
-        listing: booking.listing._id,
-        booking: booking._id,
-        type: type === 'complaint' ? 'complaint' : 'service',
-        message: (message || '').trim()
-    });
-    await newRequest.save();
-    req.flash('success', 'Submitted successfully. The hotel manager has been notified.');
-    res.redirect('/profile');
-};
-
-// Fetch requests for manager/owner across their listings
-module.exports.getOwnerRequests = async (req, res) => {
-    const ownerId = req.user._id;
-    const ownerListings = await Listing.find({ owner: ownerId }, '_id');
-    const listingIds = ownerListings.map(l => l._id);
-    const requests = await Request.find({ listing: { $in: listingIds } })
-        .populate('user', 'username email')
-        .populate('listing', 'title')
-        .populate('booking', 'checkIn checkOut')
-        .sort({ createdAt: -1 });
-    res.render('listings/dashboard', { bookings: [], currentUser: req.user, requests });
-};
-
-// Simple owner dashboard
-module.exports.ownerDashboard = async (req, res) => {
-    try {
-        const ownerId = req.user._id;
-        
-        // Find listings owned by this user
-        const ownerListings = await Listing.find({ owner: ownerId });
-        const listingIds = ownerListings.map(l => l._id);
-
-        // Find bookings for these listings
-        const bookings = await Booking.find({ listing: { $in: listingIds } })
-            .populate('user', 'username email')
-            .populate('listing', 'title location')
-            .sort({ createdAt: -1 })
-            .limit(20); // Show only recent 20 bookings
-
-        res.render('listings/dashboard', {
-            bookings,
-            currentUser: req.user
-        });
-    } catch (error) {
-        console.error('Dashboard error:', error);
-        req.flash('error', 'Error loading dashboard');
-        res.redirect('/listings');
-    }
-};
-
-// Update a request status (owner-only)
-module.exports.updateRequestStatus = async (req, res) => {
-    const { id } = req.params;
-    const { status } = req.body;
-    const valid = ['open', 'in_progress', 'resolved'];
-    if (!valid.includes(status)) {
-        req.flash('error', 'Invalid status');
-        return res.redirect('/dashboard');
-    }
-    const requestDoc = await Request.findById(id).populate('listing');
-    if (!requestDoc) {
-        req.flash('error', 'Request not found');
-        return res.redirect('/dashboard');
-    }
-    if (String(requestDoc.listing.owner) !== String(req.user._id)) {
-        req.flash('error', 'Not authorized');
-        return res.redirect('/dashboard');
-    }
-    requestDoc.status = status;
-    await requestDoc.save();
-    req.flash('success', 'Request updated');
-    res.redirect('/dashboard');
-};
 module.exports.deleteBooking = async (req, res) => {
     const { id } = req.params;
-    const booking = await Booking.findById(id).populate('listing');
-    
-    if (!booking) {
-        req.flash('error', 'Booking not found');
-        return res.redirect('/profile');
-    }
-
-    // Check if user owns this booking
-    if (!booking.user.equals(req.user._id)) {
-        req.flash('error', 'Unauthorized');
-        return res.redirect('/profile');
-    }
-
-    // Calculate cancellation fee
-    const isActiveMember = req.user && req.user.isMember && req.user.membershipExpiresAt && new Date(req.user.membershipExpiresAt) > new Date();
-    const now = new Date();
-    
-    // Initialize cancellation tracking if not set (for existing members)
-    if (isActiveMember && !req.user.freeCancellationsResetAt) {
-        req.user.freeCancellationsResetAt = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-        req.user.freeCancellationsUsed = 0;
-        await req.user.save();
-    }
-    
-    // Reset free cancellations if it's a new month for members
-    if (isActiveMember && req.user.freeCancellationsResetAt && now > req.user.freeCancellationsResetAt) {
-        req.user.freeCancellationsUsed = 0;
-        req.user.freeCancellationsResetAt = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-        await req.user.save();
-    }
-
-    let cancellationFee = 0;
-    let canUseFreeCancellation = false;
-
-    if (isActiveMember && req.user.freeCancellationsUsed < 2) {
-        canUseFreeCancellation = true;
-        cancellationFee = 0;
-    } else {
-        cancellationFee = Math.round(booking.totalAmount * 0.1); // 10% fee
-    }
-
-    // Store cancellation details in session for confirmation
-    req.session.cancellationDetails = {
-        bookingId: id,
-        cancellationFee,
-        canUseFreeCancellation,
-        bookingAmount: booking.totalAmount
-    };
-
-    res.redirect(`/profile/cancel/confirm/${id}`);
-};
-
-module.exports.renderCancelConfirm = async (req, res) => {
-    const { id } = req.params;
-    const booking = await Booking.findById(id).populate('listing');
-    
-    if (!booking) {
-        req.flash('error', 'Booking not found');
-        return res.redirect('/profile');
-    }
-
-    const cancellationDetails = req.session.cancellationDetails;
-    if (!cancellationDetails || cancellationDetails.bookingId !== id) {
-        req.flash('error', 'Invalid cancellation request');
-        return res.redirect('/profile');
-    }
-
-    res.render('users/cancel-confirm', { 
-        booking, 
-        cancellationDetails,
-        currentUser: req.user 
-    });
-};
-
-module.exports.confirmCancellation = async (req, res) => {
-    const { id } = req.params;
-    const cancellationDetails = req.session.cancellationDetails;
-    
-    if (!cancellationDetails || cancellationDetails.bookingId !== id) {
-        req.flash('error', 'Invalid cancellation request');
-        return res.redirect('/profile');
-    }
-
-    const booking = await Booking.findById(id);
-    if (!booking) {
-        req.flash('error', 'Booking not found');
-        return res.redirect('/profile');
-    }
-
-    // Update user's free cancellation count if applicable
-    if (cancellationDetails.canUseFreeCancellation) {
-        req.user.freeCancellationsUsed += 1;
-        if (!req.user.freeCancellationsResetAt) {
-            const now = new Date();
-            req.user.freeCancellationsResetAt = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-        }
-        await req.user.save();
-    }
-
-    // Delete the booking
     await Booking.findByIdAndDelete(id);
-    
-    // Clear session data
-    delete req.session.cancellationDetails;
-
-    if (cancellationDetails.cancellationFee > 0) {
-        req.flash('success', `Booking cancelled successfully! Cancellation fee: ₹${cancellationDetails.cancellationFee}`);
-    } else {
-        req.flash('success', 'Booking cancelled successfully! No cancellation fee (free cancellation used).');
-    }
-    
+    req.flash('success', 'Booking deleted successfully!');
     res.redirect('/profile');
-};
-
-// AJAX API Methods
-
-// Get cancellation details for AJAX modal
-module.exports.getCancellationDetails = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const booking = await Booking.findById(id).populate('listing');
-        
-        if (!booking) {
-            return res.json({ success: false, error: 'Booking not found' });
-        }
-
-        // Check if user owns this booking
-        if (!booking.user.equals(req.user._id)) {
-            return res.json({ success: false, error: 'Unauthorized' });
-        }
-
-        // Calculate cancellation fee
-        const isActiveMember = req.user && req.user.isMember && req.user.membershipExpiresAt && new Date(req.user.membershipExpiresAt) > new Date();
-        const now = new Date();
-        
-        // Initialize cancellation tracking if not set (for existing members)
-        if (isActiveMember && !req.user.freeCancellationsResetAt) {
-            req.user.freeCancellationsResetAt = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-            req.user.freeCancellationsUsed = 0;
-            await req.user.save();
-        }
-        
-        // Reset free cancellations if it's a new month for members
-        if (isActiveMember && req.user.freeCancellationsResetAt && now > req.user.freeCancellationsResetAt) {
-            req.user.freeCancellationsUsed = 0;
-            req.user.freeCancellationsResetAt = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-            await req.user.save();
-        }
-
-        let cancellationFee = 0;
-        let canUseFreeCancellation = false;
-
-        if (isActiveMember && req.user.freeCancellationsUsed < 2) {
-            canUseFreeCancellation = true;
-            cancellationFee = 0;
-        } else {
-            cancellationFee = Math.round(booking.totalAmount * 0.1); // 10% fee
-        }
-
-        res.json({
-            success: true,
-            booking: {
-                _id: booking._id,
-                checkIn: booking.checkIn,
-                checkOut: booking.checkOut,
-                totalAmount: booking.totalAmount,
-                listing: {
-                    title: booking.listing.title
-                }
-            },
-            cancellationDetails: {
-                cancellationFee,
-                canUseFreeCancellation,
-                freeCancellationsUsed: req.user.freeCancellationsUsed || 0,
-                bookingAmount: booking.totalAmount
-            }
-        });
-    } catch (error) {
-        res.json({ success: false, error: 'Server error' });
-    }
-};
-
-// Confirm cancellation via AJAX
-module.exports.confirmCancellationAjax = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const booking = await Booking.findById(id).populate('listing');
-        
-        if (!booking) {
-            return res.json({ success: false, error: 'Booking not found' });
-        }
-
-        // Check if user owns this booking
-        if (!booking.user.equals(req.user._id)) {
-            return res.json({ success: false, error: 'Unauthorized' });
-        }
-
-        // Calculate cancellation fee
-        const isActiveMember = req.user && req.user.isMember && req.user.membershipExpiresAt && new Date(req.user.membershipExpiresAt) > new Date();
-        const now = new Date();
-        
-        // Initialize cancellation tracking if not set (for existing members)
-        if (isActiveMember && !req.user.freeCancellationsResetAt) {
-            req.user.freeCancellationsResetAt = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-            req.user.freeCancellationsUsed = 0;
-            await req.user.save();
-        }
-        
-        // Reset free cancellations if it's a new month for members
-        if (isActiveMember && req.user.freeCancellationsResetAt && now > req.user.freeCancellationsResetAt) {
-            req.user.freeCancellationsUsed = 0;
-            req.user.freeCancellationsResetAt = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-            await req.user.save();
-        }
-
-        let cancellationFee = 0;
-        let canUseFreeCancellation = false;
-
-        if (isActiveMember && req.user.freeCancellationsUsed < 2) {
-            canUseFreeCancellation = true;
-            cancellationFee = 0;
-        } else {
-            cancellationFee = Math.round(booking.totalAmount * 0.1); // 10% fee
-        }
-
-        // Update user's free cancellation count if applicable
-        if (canUseFreeCancellation) {
-            req.user.freeCancellationsUsed += 1;
-            if (!req.user.freeCancellationsResetAt) {
-                req.user.freeCancellationsResetAt = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-            }
-            await req.user.save();
-        }
-
-        // Delete the booking
-        await Booking.findByIdAndDelete(id);
-
-        let message = 'Booking cancelled successfully!';
-        if (cancellationFee > 0) {
-            message += ` Cancellation fee: ₹${cancellationFee}`;
-        } else {
-            message += ' No cancellation fee (free cancellation used).';
-        }
-
-        res.json({
-            success: true,
-            message: message,
-            user: {
-                isMember: req.user.isMember,
-                membershipExpiresAt: req.user.membershipExpiresAt,
-                freeCancellationsUsed: req.user.freeCancellationsUsed
-            }
-        });
-    } catch (error) {
-        res.json({ success: false, error: 'Server error' });
-    }
-};
-
-// Activate membership via AJAX
-module.exports.activateMembershipAjax = async (req, res) => {
-    try {
-        const user = await User.findById(req.user._id);
-        if (!user) {
-            return res.json({ success: false, error: 'User not found' });
-        }
-        
-        const now = new Date();
-        const expires = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-        user.isMember = true;
-        user.membershipExpiresAt = expires;
-        
-        // Initialize cancellation tracking for new members
-        if (!user.freeCancellationsResetAt) {
-            user.freeCancellationsResetAt = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-            user.freeCancellationsUsed = 0;
-        }
-        
-        await user.save();
-        
-        res.json({
-            success: true,
-            message: 'Membership activated for 30 days!',
-            user: {
-                isMember: user.isMember,
-                membershipExpiresAt: user.membershipExpiresAt,
-                freeCancellationsUsed: user.freeCancellationsUsed
-            }
-        });
-    } catch (error) {
-        res.json({ success: false, error: 'Could not activate membership' });
-    }
 };

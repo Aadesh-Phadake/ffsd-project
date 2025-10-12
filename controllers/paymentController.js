@@ -73,8 +73,8 @@ exports.verifyPayment = async (req, res) => {
     }
 };
 
-// Create order for listing with optional fee waiver for members
-exports.createOrderForListing = async (propertyId, isMember, checkIn, checkOut, guests) => {
+// Create order with 5% admin fee
+exports.createOrderWithFee = async (propertyId, checkIn, checkOut, guests) => {
     try {
         const property = await Listing.findById(propertyId);
 
@@ -83,7 +83,7 @@ exports.createOrderForListing = async (propertyId, isMember, checkIn, checkOut, 
         }
 
         const basePrice = property.price;
-        const adminFee = isMember ? 0 : basePrice * 0.05; // waive for members
+        const adminFee = basePrice * 0.05; // 5% admin fee
         const totalPrice = basePrice + adminFee;
 
         const options = {
@@ -137,46 +137,4 @@ exports.verifyPaymentWithFee = async (razorpay_order_id, razorpay_payment_id, ra
         console.error('Error verifying payment with fee:', error);
         throw error;
     }
-};
-
-// Create membership order (₹999)
-exports.createMembershipOrder = async () => {
-    const options = {
-        amount: 99900, // ₹999 in paise
-        currency: 'INR',
-        receipt: `membership_${Date.now()}`,
-    };
-    const order = await razorpay.orders.create(options);
-    return { orderId: order.id, amount: options.amount };
-};
-
-// Verify membership payment and activate
-exports.verifyMembershipPayment = async (userId, razorpay_order_id, razorpay_payment_id, razorpay_signature) => {
-    const sign = `${razorpay_order_id}|${razorpay_payment_id}`;
-    const expectedSign = crypto
-        .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-        .update(sign.toString())
-        .digest('hex');
-
-    if (razorpay_signature !== expectedSign) {
-        return { success: false };
-    }
-
-    const User = require('../models/user');
-    const user = await User.findById(userId);
-    if (!user) return { success: false };
-    const now = new Date();
-    const expires = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-    user.isMember = true;
-    user.membershipExpiresAt = expires;
-    
-    // Initialize cancellation tracking for new members
-    if (!user.freeCancellationsResetAt) {
-        user.freeCancellationsResetAt = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-        user.freeCancellationsUsed = 0;
-    }
-    
-    await user.save();
-
-    return { success: true, expiresAt: expires };
 };

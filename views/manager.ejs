@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manager Dashboard - TravelNest</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .manager-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .booking-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid #007bff;
+        }
+        .loading-spinner {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/listings">
+                <i class="fas fa-hotel me-2"></i>TravelNest Manager
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/listings">Back to Listings</a>
+                <a class="nav-link" href="/logout">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="manager-card">
+            <h1><i class="fas fa-chart-line me-3"></i>Manager Dashboard</h1>
+            <p class="mb-0">Welcome back, <%= currentUser.username %>! Manage your properties and bookings.</p>
+        </div>
+
+        <div class="row">
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <i class="fas fa-building fa-3x text-primary mb-3"></i>
+                    <h3 id="totalProperties">0</h3>
+                    <p class="text-muted">Total Properties</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <i class="fas fa-calendar-check fa-3x text-success mb-3"></i>
+                    <h3 id="totalBookings">0</h3>
+                    <p class="text-muted">Total Bookings</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <i class="fas fa-rupee-sign fa-3x text-warning mb-3"></i>
+                    <h3 id="totalRevenue">₹0</h3>
+                    <p class="text-muted">Total Revenue</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <i class="fas fa-star fa-3x text-info mb-3"></i>
+                    <h3 id="avgRating">0.0</h3>
+                    <p class="text-muted">Average Rating</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5><i class="fas fa-list me-2"></i>Recent Bookings</h5>
+                        <div>
+                            <button class="btn btn-sm btn-primary" onclick="refreshBookings()">
+                                <i class="fas fa-sync-alt me-1"></i>Refresh
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="loading-spinner text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                        <div id="bookingsList">
+                            <!-- Bookings will be loaded here via AJAX -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-chart-pie me-2"></i>Property Performance</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="propertyChart" width="400" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5><i class="fas fa-home me-2"></i>My Properties</h5>
+                        <button class="btn btn-primary" onclick="addNewProperty()">
+                            <i class="fas fa-plus me-1"></i>Add Property
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="propertiesList">
+                            <!-- Properties will be loaded here via AJAX -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let propertyChart = null;
+
+        // Manager Dashboard AJAX Functions
+        function loadManagerData() {
+            fetch('/manager/dashboard/data')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        updateDashboardStats(data.stats);
+                        updateBookingsList(data.bookings);
+                        updatePropertiesList(data.properties);
+                        updatePropertyChart(data.chartData);
+                    } else {
+                        alert('Error loading dashboard data: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error loading dashboard data');
+                });
+        }
+
+        function refreshBookings() {
+            const spinner = document.querySelector('.loading-spinner');
+            spinner.style.display = 'block';
+            
+            fetch('/manager/bookings/refresh')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        updateBookingsList(data.bookings);
+                        alert('Bookings refreshed successfully!');
+                    } else {
+                        alert('Error refreshing bookings: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error refreshing bookings');
+                })
+                .finally(() => {
+                    spinner.style.display = 'none';
+                });
+        }
+
+        function addNewProperty() {
+            // Open new property form
+            window.location.href = '/listings/new';
+        }
+
+        function updateDashboardStats(stats) {
+            document.getElementById('totalProperties').textContent = stats.totalProperties;
+            document.getElementById('totalBookings').textContent = stats.totalBookings;
+            document.getElementById('totalRevenue').textContent = '₹' + stats.totalRevenue.toLocaleString('en-IN');
+            document.getElementById('avgRating').textContent = stats.avgRating.toFixed(1);
+        }
+
+        function updateBookingsList(bookings) {
+            const container = document.getElementById('bookingsList');
+            if (bookings.length === 0) {
+                container.innerHTML = '<div class="alert alert-info">No bookings found.</div>';
+                return;
+            }
+
+            let html = '';
+            bookings.forEach(booking => {
+                html += `
+                    <div class="booking-item">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>${booking.listing.title}</h6>
+                                <p class="mb-1"><strong>Guest:</strong> ${booking.user.username}</p>
+                                <p class="mb-1"><strong>Check-in:</strong> ${booking.checkIn}</p>
+                                <p class="mb-1"><strong>Check-out:</strong> ${booking.checkOut}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-1"><strong>Guests:</strong> ${booking.guests}</p>
+                                <p class="mb-1"><strong>Amount:</strong> ₹${booking.totalAmount.toLocaleString('en-IN')}</p>
+                                <p class="mb-1"><strong>Status:</strong> <span class="badge bg-success">Confirmed</span></p>
+                                <button class="btn btn-sm btn-outline-primary" onclick="viewBookingDetails('${booking._id}')">
+                                    View Details
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function updatePropertiesList(properties) {
+            const container = document.getElementById('propertiesList');
+            if (properties.length === 0) {
+                container.innerHTML = '<div class="alert alert-info">No properties found. <a href="/listings/new">Add your first property</a></div>';
+                return;
+            }
+
+            let html = '';
+            properties.forEach(property => {
+                html += `
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <h5>${property.title}</h5>
+                                    <p class="text-muted">${property.location}</p>
+                                    <p><strong>Price:</strong> ₹${property.price}/night</p>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <button class="btn btn-sm btn-primary me-2" onclick="editProperty('${property._id}')">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </button>
+                                    <button class="btn btn-sm btn-info" onclick="viewPropertyStats('${property._id}')">
+                                        <i class="fas fa-chart-bar"></i> Stats
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function updatePropertyChart(chartData) {
+            const ctx = document.getElementById('propertyChart').getContext('2d');
+            
+            if (propertyChart) {
+                propertyChart.destroy();
+            }
+            
+            propertyChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        data: chartData.data,
+                        backgroundColor: [
+                            '#FF6384',
+                            '#36A2EB',
+                            '#FFCE56',
+                            '#4BC0C0',
+                            '#9966FF'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function viewBookingDetails(bookingId) {
+            fetch(`/manager/bookings/${bookingId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(`Booking Details:\nProperty: ${data.booking.listing.title}\nGuest: ${data.booking.user.username}\nAmount: ₹${data.booking.totalAmount}`);
+                    } else {
+                        alert('Error fetching booking details: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error fetching booking details');
+                });
+        }
+
+        function editProperty(propertyId) {
+            window.location.href = `/listings/${propertyId}/edit`;
+        }
+
+        function viewPropertyStats(propertyId) {
+            fetch(`/manager/properties/${propertyId}/stats`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(`Property Stats:\nTotal Bookings: ${data.stats.totalBookings}\nTotal Revenue: ₹${data.stats.totalRevenue}\nAverage Rating: ${data.stats.avgRating}`);
+                    } else {
+                        alert('Error fetching property stats: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error fetching property stats');
+                });
+        }
+
+        // Load data when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadManagerData();
+        });
+    </script>
+</body>
+</html>

@@ -34,12 +34,74 @@ module.exports.isOwnerOrAdmin = async (req, res, next) => {
 
     if (
         !listing.owner.equals(req.user._id) &&
-        req.user.username !== "TravelNest"
+        req.user.role !== "admin"
     ) {
         req.flash("error", "You do not have permission to do that!");
         return res.redirect(`/listings/${id}`);
     }
 
+    next();
+};
+
+// Role-based access control middleware
+module.exports.requireAdmin = (req, res, next) => {
+    if (!req.isAuthenticated()) {
+        req.session.redirectUrl = req.originalUrl;
+        req.flash('error', 'Login required!');
+        return res.redirect('/login');
+    }
+    
+    if (req.user.role !== 'admin') {
+        req.flash('error', 'Admin access required!');
+        return res.redirect('/listings');
+    }
+    
+    next();
+};
+
+module.exports.requireManager = (req, res, next) => {
+    if (!req.isAuthenticated()) {
+        req.session.redirectUrl = req.originalUrl;
+        req.flash('error', 'Login required!');
+        return res.redirect('/login');
+    }
+    
+    if (req.user.role !== 'manager') {
+        req.flash('error', 'Manager access required!');
+        return res.redirect('/listings');
+    }
+    
+    next();
+};
+
+module.exports.requireManagerOrAdmin = (req, res, next) => {
+    if (!req.isAuthenticated()) {
+        req.session.redirectUrl = req.originalUrl;
+        req.flash('error', 'Login required!');
+        return res.redirect('/login');
+    }
+    
+    if (req.user.role !== 'manager' && req.user.role !== 'admin') {
+        req.flash('error', 'Manager or Admin access required!');
+        return res.redirect('/listings');
+    }
+    
+    next();
+};
+
+// Middleware for listing creation - only managers can create listings
+module.exports.requireManagerForListing = (req, res, next) => {
+    if (!req.isAuthenticated()) {
+        req.session.redirectUrl = req.originalUrl;
+        req.flash('error', 'Login required!');
+        return res.redirect('/login');
+    }
+    
+    if (req.user.role !== 'manager') {
+        req.flash('error', 'Only property managers can create listings!');
+        return res.redirect('/listings');
+    }
+    
     next();
 };
 
