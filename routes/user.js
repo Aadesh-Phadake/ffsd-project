@@ -20,38 +20,21 @@ router.route('/login')
 router.get('/logout', userController.logout);
 
 router.get('/profile', isLoggedIn, wrapAsync(userController.renderProfile));
+router.post('/membership/activate', isLoggedIn, wrapAsync(userController.activateMembership));
 
 router.get('/profile/cancel/:id', isLoggedIn, wrapAsync(userController.deleteBooking));
+router.get('/profile/cancel/confirm/:id', isLoggedIn, wrapAsync(userController.renderCancelConfirm));
+router.post('/profile/cancel/confirm/:id', isLoggedIn, wrapAsync(userController.confirmCancellation));
 
 router.post('/listings/:id/book', isLoggedIn, wrapAsync(userController.createBooking));
-router.get('/dashboard', isLoggedIn ,async (req, res) => {
-    try {
-        // 1. Extract userId from cookies
-        const userId = req.user._id;
-        if (!userId) {
-            return res.status(401).json({ message: 'Unauthorized: No user ID found in cookies' });
-        }
 
-        // 2. Find listings owned by this user
-        const userListings = await Listing.find({ owner: userId }, '_id');
-        const listingIds = userListings.map(listing => listing._id);
+// Simple dashboard
+router.get('/dashboard', isLoggedIn, wrapAsync(userController.ownerDashboard));
 
-        // 3. Find bookings where listing is in those listingIds
-        const bookings = await Booking.find({ listing: { $in: listingIds } })
-            .populate('user', 'username email')       // Optional: populate user details
-            .populate('listing', 'title location') // Optional: populate listing details
-            .exec();
-
-        // 4. Send the bookings to frontend
-        res.status(200).render('listings/dashboard.ejs',{bookings, currentUser: req.user});
-        
-        // res.status(200).json({ bookings });
-
-    } catch (err) {
-        console.error('Dashboard route error:', err);
-        res.status(500).json({ message: 'Server error while fetching dashboard data' });
-    }
-});
+// AJAX API Routes
+router.get('/api/profile/cancel/:id/details', isLoggedIn, wrapAsync(userController.getCancellationDetails));
+router.post('/api/profile/cancel/:id/confirm', isLoggedIn, wrapAsync(userController.confirmCancellationAjax));
+router.post('/api/membership/activate', isLoggedIn, wrapAsync(userController.activateMembershipAjax));
 
 router.get('/dashboard/search', isLoggedIn, wrapAsync(userController.searchDashboard));
 

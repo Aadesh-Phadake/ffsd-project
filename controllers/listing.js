@@ -189,7 +189,8 @@ module.exports.renderPayment = async (req, res) => {
     if (checkInDate && checkOutDate && !isNaN(checkInDate.getTime()) && !isNaN(checkOutDate.getTime())) {
         nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
         if (nights > 0) {
-            serviceFee = Math.round(listing.price * nights * 0.1);
+            const isActiveMember = req.user && req.user.isMember && req.user.membershipExpiresAt && new Date(req.user.membershipExpiresAt) > new Date();
+            serviceFee = isActiveMember ? 0 : Math.round(listing.price * nights * 0.1);
             totalAmount = (listing.price * nights) + serviceFee;
         }
     }

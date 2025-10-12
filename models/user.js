@@ -7,6 +7,24 @@ const userSchema = new schema({
         type: String,
         required: true,
         unique: true
+    },
+    // Membership fields
+    isMember: {
+        type: Boolean,
+        default: false
+    },
+    membershipExpiresAt: {
+        type: Date,
+        default: null
+    },
+    // Cancellation tracking
+    freeCancellationsUsed: {
+        type: Number,
+        default: 0
+    },
+    freeCancellationsResetAt: {
+        type: Date,
+        default: null
     }
 });
 
