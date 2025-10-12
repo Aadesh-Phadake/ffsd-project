@@ -18,6 +18,19 @@
                 <input type="password" name="password" class="form-control" required>
                 <div class="invalid-feedback">Please enter a valid password</div>
             </div>
+            <div class="mb-3">
+                <label for="role" class="form-label">Account Type</label>
+                <select name="role" class="form-control" required>
+                    <option value="">Select Account Type</option>
+                    <option value="traveller">Traveller - Book and explore hotels</option>
+                    <option value="manager">Hotel Manager - List and manage properties</option>
+                </select>
+                <div class="invalid-feedback">Please select an account type</div>
+                <small class="form-text text-muted">
+                    <strong>Traveller:</strong> Browse and book hotels<br>
+                    <strong>Hotel Manager:</strong> List properties and manage bookings
+                </small>
+            </div>
             <button type="submit" class="btn add-btn">Sign Up</button>
     </div>
 </div>

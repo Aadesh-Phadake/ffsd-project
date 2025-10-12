@@ -7,18 +7,28 @@
     <div class="collapse navbar-collapse" id="navbarNav">
       <div class="navbar-nav">
         <a class="nav-link" href="/listings">Explore</a>
-        <a class="nav-link" href="/listings/new">TravelNest Your Home</a>
+        <% if(currentUser && currentUser.role === 'manager') { %>
+        <a class="nav-link" href="/listings/new">List Your Property</a>
+        <% } %>
       </div>
       <div class="navbar-nav ms-auto">
         <% if(!currentUser) { %>
         <a class="nav-link" href="/signup">Sign Up</a>
         <a class="nav-link" href="/login">Login</a>
         <% } else { %>
+        <!-- Traveller Navigation -->
+        <% if(currentUser.role === 'traveller') { %>
         <a class="nav-link" href="/profile">My Profile</a>
-        <a class="nav-link" href="/dashboard">Dashboard</a>
-        <% if(currentUser.username === "TravelNest") { %>
+        
+        <!-- Manager Navigation -->
+        <% } else if(currentUser.role === 'manager') { %>
+        <a class="nav-link" href="/manager/dashboard">Manager Dashboard</a>
+        
+        <!-- Admin Navigation -->
+        <% } else if(currentUser.role === 'admin' || currentUser.username === "TravelNest") { %>
         <a class="nav-link" href="/admin" style="color: #c58b5e;">Admin Panel</a>
         <% } %>
+        
         <a class="nav-link" href="/logout">Logout</a>
         <% } %>
     </div>
