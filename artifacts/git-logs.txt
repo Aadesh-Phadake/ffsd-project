@@ -1,0 +1,9 @@
+8d510fd - ganesh30651 - added user features and ajax aync - 2025-10-12
+3a0828e - KHemanth-dev - AJAX part for hotel owner - 2025-10-11
+8b8445d - KHemanth-dev - Updated code after stash pop - added new fixes - 2025-10-11
+06572d8 - Aadesh Ashok Phadake - admin can edit del hotels - 2025-05-07
+f6bc73b - KHemanth-dev - added dynamic admin dashboard - 2025-05-07
+7c0c41c - ganesh30651 - added payment page - 2025-04-01
+7447f05 - Aadesh Ashok Phadake - added new feature of updating listing within 2 months - 2025-03-18
+1cd3729 - Aadesh Ashok Phadake - Updated listings and user controllers, added admin and payment views - 2025-03-18
+b5343f2 - Aadesh Ashok Phadake - Initial commit - 2025-03-15
