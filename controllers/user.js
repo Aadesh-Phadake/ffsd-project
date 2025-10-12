@@ -12,7 +12,11 @@ module.exports.signup = async (req, res) => {
     let {username, email, password, role} = req.body;
     
     // Validate role
+<<<<<<< HEAD
     if (!['traveller', 'manager', 'customer_care'].includes(role)) {
+=======
+    if (!['traveller', 'manager'].includes(role)) {
+>>>>>>> 78dfe5904c4dfb796f46166260e05a49cf9b4607
         req.flash('error', 'Please select a valid account type');
         return res.redirect('/signup');
     }
@@ -26,8 +30,11 @@ module.exports.signup = async (req, res) => {
         // Redirect based on role
         if (role === 'manager') {
             res.redirect('/manager/dashboard');
+<<<<<<< HEAD
         } else if (role === 'customer_care') {
             res.redirect('/customer-care/dashboard');
+=======
+>>>>>>> 78dfe5904c4dfb796f46166260e05a49cf9b4607
         } else {
             res.redirect('/listings');
         }

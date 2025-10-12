@@ -63,8 +63,10 @@ const store = MongoStore.create({
 store.on('error', e => console.log('Session Store Error', e));
 const sessionOptions = {
     store: store,
+    store: store,
     secret: process.env.SECRET || 'defaultsecret',
     resave: false,
+    saveUninitialized: false,
     saveUninitialized: false,
     cookie: {
         httpOnly: true,
@@ -83,7 +85,19 @@ passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
 // Global Variables Middleware
+// Global Variables Middleware
 app.use((req, res, next) => {
+    // Ensure flash is available
+    if (req.flash) {
+        res.locals.success = req.flash('success');
+        res.locals.error = req.flash('error');
+    } else {
+        res.locals.success = [];
+        res.locals.error = [];
+    }
+    
+    // Always ensure currentUser is defined
+    res.locals.currentUser = req.user || null;
     // Ensure flash is available
     if (req.flash) {
         res.locals.success = req.flash('success');
@@ -117,6 +131,11 @@ const { requireTraveller, requireAdmin } = require('./middleware');
 
 // Profile (Travellers only - managers and admins don't book hotels)
 app.get('/profile', isLoggedIn, requireTraveller, wrapAsync(async (req, res) => {
+// Import role-based middleware
+const { requireTraveller, requireAdmin } = require('./middleware');
+
+// Profile (Travellers only - managers and admins don't book hotels)
+app.get('/profile', isLoggedIn, requireTraveller, wrapAsync(async (req, res) => {
     const bookings = await Booking.find({ user: req.user._id })
         .populate({ path: 'listing', options: { strictPopulate: false } })
         .sort('-createdAt');
@@ -129,10 +148,20 @@ app.get('/profile', isLoggedIn, requireTraveller, wrapAsync(async (req, res) => 
 // Legacy admin middleware for username-based check (keeping for compatibility)
 function legacyAdminCheck(req, res, next) {
     if (req.user?.username === "TravelNest" || req.user?.role === 'admin') return next();
+// Legacy admin middleware for username-based check (keeping for compatibility)
+function legacyAdminCheck(req, res, next) {
+    if (req.user?.username === "TravelNest" || req.user?.role === 'admin') return next();
     req.flash('error', 'You must be an admin to access this page');
     res.redirect("/login");
 }
 
+// Admin routes - Clean Dashboard with AJAX tables
+app.get("/admin", isLoggedIn, legacyAdminCheck, wrapAsync(async (req, res) => {
+    res.render('admin-clean', { currentUser: req.user });
+}));
+
+// Old admin route (keeping for reference)
+app.get("/admin-old", isLoggedIn, requireAdmin, wrapAsync(async (req, res) => {
 // Admin routes - Clean Dashboard with AJAX tables
 app.get("/admin", isLoggedIn, legacyAdminCheck, wrapAsync(async (req, res) => {
     res.render('admin-clean', { currentUser: req.user });
@@ -156,6 +185,7 @@ app.get("/admin-old", isLoggedIn, requireAdmin, wrapAsync(async (req, res) => {
     }
 
     const bookings = await Booking.find(filterQuery);
+    // Calculate total revenue
     // Calculate total revenue
     const totalRevenue = bookings.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
     const totalBookings = bookings.length;
@@ -268,6 +298,79 @@ app.delete("/admin/users/:id", isLoggedIn, requireAdmin, wrapAsync(async (req, r
     req.flash('success', 'User and their bookings deleted successfully!');
     res.redirect('/admin/users');
 }));
+}));
+
+// Admin Hotel Management
+app.get("/admin/hotels", isLoggedIn, requireAdmin, wrapAsync(async (req, res) => {
+    const hotels = await Listing.find({})
+        .populate('owner', 'username email')
+        .populate('reviews')
+        .sort('-createdAt');
+    
+    // Add booking count for each hotel
+    const hotelsWithBookings = await Promise.all(hotels.map(async (hotel) => {
+        const bookingCount = await Booking.countDocuments({ listing: hotel._id });
+        const totalRevenue = await Booking.aggregate([
+            { $match: { listing: hotel._id } },
+            { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+        ]);
+        return {
+            ...hotel.toObject(),
+            bookingCount,
+            revenue: totalRevenue[0] ? totalRevenue[0].total : 0
+        };
+    }));
+    
+    res.render("admin-hotels", {
+        hotels: hotelsWithBookings,
+        currentUser: req.user
+    });
+}));
+
+// Admin User Management
+app.get("/admin/users", isLoggedIn, requireAdmin, wrapAsync(async (req, res) => {
+    const users = await User.find({ username: { $ne: "TravelNest" } })
+        .sort('-createdAt');
+    
+    // Add booking statistics for each user
+    const usersWithStats = await Promise.all(users.map(async (user) => {
+        const bookings = await Booking.find({ user: user._id });
+        const totalBookings = bookings.length;
+        const totalSpent = bookings.reduce((sum, booking) => sum + (booking.totalAmount || 0), 0);
+        const lastBooking = bookings.length > 0 ? 
+            Math.max(...bookings.map(b => new Date(b.createdAt).getTime())) : null;
+        
+        return {
+            ...user.toObject(),
+            totalBookings,
+            totalSpent,
+            lastBooking: lastBooking ? new Date(lastBooking) : null
+        };
+    }));
+    
+    res.render("admin-users", {
+        users: usersWithStats,
+        currentUser: req.user
+    });
+}));
+
+// Delete Hotel (Admin)
+app.delete("/admin/hotels/:id", isLoggedIn, requireAdmin, wrapAsync(async (req, res) => {
+    const { id } = req.params;
+    await Listing.findByIdAndDelete(id);
+    req.flash('success', 'Hotel deleted successfully!');
+    res.redirect('/admin/hotels');
+}));
+
+// Delete User (Admin) 
+app.delete("/admin/users/:id", isLoggedIn, requireAdmin, wrapAsync(async (req, res) => {
+    const { id } = req.params;
+    // Also delete user's bookings
+    await Booking.deleteMany({ user: id });
+    await User.findByIdAndDelete(id);
+    req.flash('success', 'User and their bookings deleted successfully!');
+    res.redirect('/admin/users');
+}));
 
 // Cancel booking
 app.delete('/profile/cancel/:id', isLoggedIn, wrapAsync(async (req, res) => {
@@ -303,12 +406,29 @@ app.get("/terms", (req, res) => {
 app.get("/contact", (req, res) => {
     res.render("contact", { currentUser: req.user || null });
 });
+app.get("/privacy", (req, res) => {
+    res.render("privacy", { currentUser: req.user || null });
+});
+app.get("/terms", (req, res) => {
+    res.render("terms", { currentUser: req.user || null });
+});
+app.get("/contact", (req, res) => {
+    res.render("contact", { currentUser: req.user || null });
+});
 
 // 404
 app.all('*', (req, res, next) => next(new expressError(404, 'Page Not Found.')));
 
 // Error handler
 app.use((err, req, res, next) => {
+    let { statusCode = 500, message = 'Something went wrong' } = err;
+    res.status(statusCode).render('error', { 
+        statusCode, 
+        message, 
+        currentUser: req.user || null,
+        success: req.flash ? req.flash('success') : [],
+        error: req.flash ? req.flash('error') : []
+    });
     let { statusCode = 500, message = 'Something went wrong' } = err;
     res.status(statusCode).render('error', { 
         statusCode, 
