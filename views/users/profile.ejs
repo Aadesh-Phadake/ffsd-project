@@ -3,6 +3,34 @@
 <!-- Include AJAX CSS -->
 <link rel="stylesheet" href="/css/profile-ajax.css">
 
+<style>
+.profile-page .taxi-bookings {
+    margin-top: 2rem !important;
+    padding-top: 1.5rem !important;
+}
+
+.profile-page .taxi-bookings h5 {
+    margin-bottom: 0.5rem !important;
+    font-weight: 600;
+}
+
+.profile-page .bookings {
+    margin-bottom: 1rem;
+}
+
+.profile-page .card-body {
+    padding: 1.5rem;
+}
+
+.profile-page .row.g-3 > * {
+    padding: 0.75rem;
+}
+
+.profile-page .border-top {
+    border-top: 1px solid #dee2e6 !important;
+}
+</style>
+
 <div class="container mt-5 mb-5 profile-page">
     <div class="row">
         <div class="col-md-8 offset-md-2">
@@ -29,7 +57,7 @@
                     </div>
 
                     <div class="bookings mt-4">
-                        <h5>My Bookings</h5>
+                        <h5 class="mb-3">My Hotel Bookings</h5>
                         <% if (bookings && bookings.length > 0) { %>
                             <% bookings.forEach(booking => { %>
                                 <div class="card mb-3 booking-card" data-booking-id="<%= booking._id %>" data-check-in="<%= booking.checkIn %>" data-check-out="<%= booking.checkOut %>">
@@ -56,9 +84,27 @@
                             <% }) %>
                         <% } else { %>
                             <div class="alert alert-info">
-                                You haven't made any bookings yet. <a href="/listings">Browse properties</a> to make your first booking!
+                                You haven't made any hotel bookings yet. <a href="/listings">Browse properties</a> to make your first booking!
                             </div>
                         <% } %>
+                    </div>
+
+                    <div class="taxi-bookings mt-5 pt-4 border-top">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <h5 class="mb-1">My Taxi Bookings</h5>
+                                <p class="text-muted mb-0 small">Manage your taxi bookings and view payment details</p>
+                            </div>
+                            <a href="/taxis/bookings" class="btn btn-sm btn-outline-primary">View All Taxi Bookings</a>
+                        </div>
+                        <div id="taxi-bookings-container">
+                            <div class="text-center py-4">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2 text-muted">Loading taxi bookings...</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -67,4 +113,53 @@
 </div>
 
 <!-- Include AJAX functionality -->
-<script src="/js/profile-ajax-simple.js"></script> 
+<script src="/js/profile-ajax-simple.js"></script>
+
+<script>
+// Load taxi bookings for profile page
+document.addEventListener('DOMContentLoaded', async function() {
+    const taxiContainer = document.getElementById('taxi-bookings-container');
+    
+    try {
+        const response = await fetch('/taxis/bookings');
+        if (response.ok) {
+            const text = await response.text();
+            // Extract the bookings from the response
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(text, 'text/html');
+            const bookingCards = doc.querySelectorAll('.col-md-6');
+            
+            if (bookingCards.length > 0) {
+                // Show first 2 taxi bookings for better layout
+                const limitedBookings = Array.from(bookingCards).slice(0, 2);
+                taxiContainer.innerHTML = `
+                    <div class="row g-3">
+                        ${limitedBookings.map(card => card.outerHTML).join('')}
+                    </div>
+                    ${bookingCards.length > 2 ? `<div class="text-center mt-3"><a href="/taxis/bookings" class="btn btn-outline-primary">View All ${bookingCards.length} Taxi Bookings</a></div>` : ''}
+                `;
+            } else {
+                taxiContainer.innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="fas fa-taxi me-2"></i>You haven't made any taxi bookings yet. 
+                        <a href="/listings" class="btn btn-sm btn-primary ms-2">Book a Taxi</a>
+                    </div>
+                `;
+            }
+        } else {
+            taxiContainer.innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Unable to load taxi bookings. Please try again later.
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error loading taxi bookings:', error);
+        taxiContainer.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-times-circle me-2"></i>Error loading taxi bookings. Please refresh the page.
+            </div>
+        `;
+    }
+});
+</script> 

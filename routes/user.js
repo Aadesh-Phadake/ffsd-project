@@ -40,4 +40,7 @@ router.get('/dashboard/search', isLoggedIn, wrapAsync(userController.searchDashb
 
 router.get('/dashboard/hotels', isLoggedIn, wrapAsync(userController.getUserHotels));
 
+// Admin dashboard
+router.get('/admin/dashboard', isLoggedIn, wrapAsync(userController.adminDashboard));
+
 module.exports = router;
