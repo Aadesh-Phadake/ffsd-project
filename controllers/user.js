@@ -120,7 +120,7 @@ module.exports.searchDashboard = async (req, res) => {
         // Add search filter for hotel name, user name, or location
         if (search) {
             const bookings = await Booking.find(filter)
-                .populate('user', 'name email')
+                .populate('user', 'username email')
                 .populate('listing', 'title location')
                 .exec();
             
@@ -130,7 +130,7 @@ module.exports.searchDashboard = async (req, res) => {
                 return (
                     booking.listing.title.toLowerCase().includes(searchLower) ||
                     booking.listing.location.toLowerCase().includes(searchLower) ||
-                    booking.user.name.toLowerCase().includes(searchLower) ||
+                    booking.user.username.toLowerCase().includes(searchLower) ||
                     booking.user.email.toLowerCase().includes(searchLower)
                 );
             });
@@ -154,7 +154,7 @@ module.exports.searchDashboard = async (req, res) => {
 
         // Default: return all bookings
         const bookings = await Booking.find(filter)
-            .populate('user', 'name email')
+            .populate('user', 'username email')
             .populate('listing', 'title location')
             .sort('-createdAt')
             .exec();

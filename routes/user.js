@@ -38,7 +38,7 @@ router.get('/dashboard', isLoggedIn ,async (req, res) => {
 
         // 3. Find bookings where listing is in those listingIds
         const bookings = await Booking.find({ listing: { $in: listingIds } })
-            .populate('user', 'name email')       // Optional: populate user details
+            .populate('user', 'username email')       // Optional: populate user details
             .populate('listing', 'title location') // Optional: populate listing details
             .exec();
 
