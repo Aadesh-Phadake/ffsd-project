@@ -10,7 +10,7 @@ const userSchema = new schema({
     },
     role: {
         type: String,
-        enum: ['traveller', 'manager', 'admin', 'customer_care'],
+        enum: ['traveller', 'manager', 'admin'],
         default: 'traveller'
     },
     // Membership fields

@@ -7,36 +7,30 @@
     <div class="collapse navbar-collapse" id="navbarNav">
       <div class="navbar-nav">
         <a class="nav-link" href="/listings">Explore</a>
-        <% if(currentUser && currentUser.role === 'manager') { %>
-        <a class="nav-link" href="/listings/new">List Your Property</a>
-        <% } %>
+  <% if(currentUser && currentUser.role === 'manager') { %>
+  <a class="nav-link" href="/listings/new">List Your Property</a>
+  <% } %>
       </div>
       <div class="navbar-nav ms-auto">
-        <% if(!currentUser) { %>
-        <a class="nav-link" href="/signup">Sign Up</a>
-        <a class="nav-link" href="/login">Login</a>
-        <% } else { %>
-        <!-- Traveller Navigation -->
-        <% if(currentUser.role === 'traveller') { %>
-        <a class="nav-link" href="/profile">My Profile</a>
-        <a class="nav-link" href="/chats">Customer Support</a>
+  <% if(!currentUser) { %>
+  <a class="nav-link" href="/signup">Sign Up</a>
+  <a class="nav-link" href="/login">Login</a>
+  <% } else { %>
+  <!-- Traveller Navigation -->
+  <% if(currentUser.role === 'traveller') { %>
+  <a class="nav-link" href="/profile">My Profile</a>
         
-        <!-- Manager Navigation -->
-        <% } else if(currentUser.role === 'manager') { %>
-        <a class="nav-link" href="/manager/dashboard">Manager Dashboard</a>
+  <!-- Manager Navigation -->
+  <% } else if(currentUser.role === 'manager') { %>
+  <a class="nav-link" href="/manager/dashboard">Manager Dashboard</a>
         
-        <!-- Customer Care Navigation -->
-        <% } else if(currentUser.role === 'customer_care') { %>
-        <a class="nav-link" href="/customer-care/dashboard">Customer Care Dashboard</a>
-        <a class="nav-link" href="/chats">Chats</a>
+  <!-- Admin Navigation -->
+  <% } else if(currentUser.role === 'admin' || currentUser.username === "TravelNest") { %>
+  <a class="nav-link" href="/admin" style="color: #c58b5e;">Admin Panel</a>
+  <% } %>
         
-        <!-- Admin Navigation -->
-        <% } else if(currentUser.role === 'admin' || currentUser.username === "TravelNest") { %>
-        <a class="nav-link" href="/admin" style="color: #c58b5e;">Admin Panel</a>
-        <% } %>
-        
-        <a class="nav-link" href="/logout">Logout</a>
-        <% } %>
+  <a class="nav-link" href="/logout">Logout</a>
+  <% } %>
     </div>
   </div>
 </nav>

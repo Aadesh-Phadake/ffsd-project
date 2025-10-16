@@ -1441,3 +1441,45 @@ textarea.form-control {
         padding: var(--space-4);
     }
 }
+
+.footer-settings {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  padding: 1rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: 1rem;
+}
+
+.language-selector,
+.currency-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #f0f0f0;
+  font-size: 0.95rem;
+}
+
+.footer-settings select {
+  background: transparent;
+  border: none;
+  color: #f0f0f0;
+  font-size: 0.95rem;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  text-transform: capitalize;
+}
+
+.footer-settings select option {
+  color: #333;
+}
+
+.footer-settings i {
+  color: #f0f0f0;
+}
+
+.currency-symbol {
+  font-size: 1rem;
+}

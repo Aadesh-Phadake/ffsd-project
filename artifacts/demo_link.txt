@@ -1,0 +1,8 @@
+Demo link : https://drive.google.com/file/d/1namKrLQTXBCOh850w_j_gbq6DxfsblGi/view?usp=drive_link
+
+Intro : 0:00 – 0:51
+Form validation : 0:52 – 2:06
+Dynamic HTML : 2:07 – 3:37
+Async Data Handling : 3:38 – 4:29
+Per member contribution : 4:30 – 6:00
+Wrap : 6:01 – 7:25
