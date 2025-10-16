@@ -1,36 +1,71 @@
 <% layout('./layouts/boilerplate') %>
+
 <div class="row mt-3">
-    <div class="col-6 offset-3">
-        <form action="/signup" method="post" class="needs-validation" novalidate>
-            <h1>Sign Up on TravelNest</h1>
-            <div class="mb-3">
-                <label for="name" class="form-label">Enter UserName</label>
-                <input type="text" name="username" class="form-control" required>
-                <div class="invalid-feedback">Please enter a valid UserName</div>
-            </div>
-            <div class="mb-3">
-                <label for="email" class="form-label">Enter Email</label>
-                <input type="email" name="email" class="form-control"  required pattern="[a-zA-Z0-9._%+-]+@gmail\.com" >
-                <div class="invalid-feedback">Please enter a valid email</div>
-            </div>
-            <div class="mb-3">
-                <label for="password" class="form-label">Enter Password</label>
-                <input type="password" name="password" class="form-control" required>
-                <div class="invalid-feedback">Please enter a valid password</div>
-            </div>
-            <div class="mb-3">
-                <label for="role" class="form-label">Account Type</label>
-                <select name="role" class="form-control" required>
-                    <option value="">Select Account Type</option>
-                    <option value="traveller">Traveller - Book and explore hotels</option>
-                    <option value="manager">Hotel Manager - List and manage properties</option>
-                </select>
-                <div class="invalid-feedback">Please select an account type</div>
-                <small class="form-text text-muted">
-                    <strong>Traveller:</strong> Browse and book hotels<br>
-                    <strong>Hotel Manager:</strong> List properties and manage bookings
-                </small>
-            </div>
-            <button type="submit" class="btn add-btn">Sign Up</button>
-    </div>
+  <div class="col-6 offset-3">
+    <form action="/signup" method="post" class="needs-validation" novalidate id="signupForm">
+      <h1>Sign Up on TravelNest</h1>
+
+      <!-- Username -->
+      <div class="mb-3">
+        <label for="username" class="form-label">Enter Username</label>
+        <input type="text" name="username" id="username" class="form-control" 
+               required pattern="^[A-Za-z][A-Za-z0-9_]{2,15}$"
+               title="Username should start with a letter and contain 3–16 characters (letters, numbers, underscores only).">
+        <div class="invalid-feedback">Username should start with a letter and be 3–16 characters long.</div>
+      </div>
+
+      <!-- Email -->
+      <div class="mb-3">
+        <label for="email" class="form-label">Enter Email</label>
+        <input type="email" name="email" id="email" class="form-control" 
+               required pattern="[a-zA-Z0-9._%+-]+@gmail\.com$"
+               title="Only Gmail addresses are allowed.">
+        <div class="invalid-feedback">Please enter a valid Gmail address.</div>
+      </div>
+
+      <!-- Password -->
+      <div class="mb-3">
+        <label for="password" class="form-label">Enter Password</label>
+        <input type="password" name="password" id="password" class="form-control"
+               required pattern="^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
+               title="Password must have at least 8 characters, one uppercase letter, one lowercase letter, one number, and one special character.">
+        <div class="invalid-feedback">
+          Password must be at least 8 characters long and include uppercase, lowercase, number, and special character.
+        </div>
+      </div>
+
+      <!-- Role -->
+      <div class="mb-3">
+        <label for="role" class="form-label">Account Type</label>
+        <select name="role" class="form-control" id="role" required>
+          <option value="">Select Account Type</option>
+          <option value="traveller">Traveller - Book and explore hotels</option>
+          <option value="manager">Hotel Manager - List and manage properties</option>
+        </select>
+        <div class="invalid-feedback">Please select an account type</div>
+        <small class="form-text text-muted">
+          <strong>Traveller:</strong> Browse and book hotels<br>
+          <strong>Hotel Manager:</strong> List properties and manage bookings
+        </small>
+      </div>
+
+      <button type="submit" class="btn add-btn">Sign Up</button>
+    </form>
+  </div>
 </div>
+
+<!-- Bootstrap Validation Script -->
+<script>
+  // Bootstrap form validation
+  (function () {
+    'use strict'
+    const form = document.getElementById('signupForm');
+    form.addEventListener('submit', function (event) {
+      if (!form.checkValidity()) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      form.classList.add('was-validated');
+    }, false);
+  })();
+</script>
